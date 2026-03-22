@@ -22,9 +22,9 @@ function HeartFilled({ className }) {
 }
 
 /**
- * @param {{ venueId?: string, photographyId?: string, className?: string, variant?: "default" | "reel" }} props
+ * @param {{ venueId?: string, photographyId?: string, className?: string, variant?: "default" | "reel", iconOnly?: boolean }} props
  */
-export default function WishlistToggle({ venueId, photographyId, className = "", variant = "default" }) {
+export default function WishlistToggle({ venueId, photographyId, className = "", variant = "default", iconOnly = false }) {
   const { toggle, has, togglePhotography, hasPhotography } = useWishlist();
   const isPhotography = typeof photographyId === "string" && photographyId.length > 0;
   const id = isPhotography ? photographyId : venueId;
@@ -44,8 +44,9 @@ export default function WishlistToggle({ venueId, photographyId, className = "",
   const reelClasses =
     "min-h-[44px] min-w-[44px] border border-white/35 bg-black/40 px-0 py-0 shadow-lg shadow-black/30 backdrop-blur-md hover:border-white/55 hover:bg-black/55 hover:shadow-xl focus-visible:ring-white/60 focus-visible:ring-offset-0";
 
-  const defaultClasses =
-    "min-h-[44px] min-w-[44px] gap-2 border border-white/80 bg-white/95 px-3 py-2 text-sm font-semibold shadow-md backdrop-blur-sm hover:scale-[1.03] hover:border-brand-200 hover:shadow-lg sm:px-4";
+  const defaultClasses = iconOnly
+    ? "h-9 w-9 shrink-0 border border-white/90 bg-white/95 p-0 shadow-md backdrop-blur-sm hover:scale-[1.05] hover:border-brand-200 hover:shadow-lg"
+    : "min-h-[44px] min-w-[44px] gap-2 border border-white/80 bg-white/95 px-3 py-2 text-sm font-semibold shadow-md backdrop-blur-sm hover:scale-[1.03] hover:border-brand-200 hover:shadow-lg sm:px-4";
 
   return (
     <button
@@ -74,7 +75,7 @@ export default function WishlistToggle({ venueId, photographyId, className = "",
           className={`shrink-0 transition-transform duration-200 ${isReel ? "h-6 w-6 text-white drop-shadow-md" : "h-5 w-5 text-brand-600"}`}
         />
       )}
-      {!isReel ? (
+      {!isReel && !iconOnly ? (
         <span className="hidden max-w-[9.5rem] truncate sm:inline">{saved ? "Saved" : "Add to Wishlist"}</span>
       ) : null}
     </button>

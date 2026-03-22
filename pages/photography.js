@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import { useCallback, useMemo, useState } from "react";
 import Footer from "../components/Footer";
 import MarketingHeader from "../components/home/MarketingHeader";
-import PhotographyReelModal from "../components/PhotographyReelModal";
 import WishlistToggle from "../components/WishlistToggle";
 import ResultsBar, {
   SORT_FEATURED,
@@ -36,27 +35,13 @@ function photographerMatchesLocation(photographer, locationLabel) {
   );
 }
 
-function PlayReelIcon({ compact = false }) {
-  return (
-    <div
-      className={`flex items-center justify-center rounded-full bg-black/35 text-white ring-1 ring-white/30 backdrop-blur-sm ${compact ? "p-1.5" : "p-3"}`}
-      aria-hidden
-    >
-      <svg
-        className={compact ? "h-2.5 w-2.5 translate-x-px" : "h-7 w-7 translate-x-0.5"}
-        viewBox="0 0 24 24"
-        fill="currentColor"
-      >
-        <path d="M8 5v14l11-7L8 5z" />
-      </svg>
-    </div>
-  );
+function isPremiumVendor(p) {
+  return p.rating >= 4.85;
 }
 
 export default function PhotographyPage() {
   const router = useRouter();
   const [sortBy, setSortBy] = useState(SORT_FEATURED);
-  const [openIndex, setOpenIndex] = useState(null);
 
   const resultsLocation = useMemo(() => {
     if (!router.isReady) return "Kerala";
@@ -83,96 +68,107 @@ export default function PhotographyPage() {
     [router],
   );
 
-  const modalOpen = openIndex !== null && openIndex >= 0 && openIndex < displayedPhotographers.length;
-
   return (
     <>
       <Head>
         <title>Photography | EventEase Kerala</title>
         <meta
           name="description"
-          content="Discover wedding photographers in a reel-style, visual-first experience—Kerala studios and packages."
+          content="Browse curated wedding photographers across Kerala—editorial portfolios, packages, and ratings."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-[#0c0b0a]">
+      <div className="min-h-screen bg-[#faf8f5]">
         <MarketingHeader />
 
         <main>
-          <div className="w-full min-w-0 shrink-0 bg-[#0c0b0a]">
-            <div className="container-default">
-              <ResultsBar
-                tone="dark"
-                className="!py-1 sm:!py-1.5"
-                totalResults={total}
-                location={resultsLocation}
-                onLocationChange={handleLocationChange}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                resultLabel="photographers"
-              />
-            </div>
-            <div className="h-px w-full bg-white/10" aria-hidden />
-            <div className="container-default pt-3 pb-1 text-center sm:pt-3.5 sm:pb-1.5">
-              <h1 className="font-serif text-base font-semibold text-white sm:text-lg">Photography</h1>
+          {/* Top bar: explore + controls */}
+          <div className="border-b border-stone-200/90 bg-[#faf8f5]">
+            <div className="container-default py-5 sm:py-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+                <div className="min-w-0">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500">Explore Talent</p>
+                  <p className="mt-2 text-base leading-snug text-stone-700 sm:text-lg">
+                    <span className="font-display text-xl font-semibold tabular-nums text-brand-900 sm:text-2xl">{total}</span>
+                    <span className="text-stone-600"> photographers in </span>
+                    <span className="font-medium text-stone-800">{resultsLocation}</span>
+                  </p>
+                </div>
+                <div className="shrink-0 lg:min-w-[20rem]">
+                  <ResultsBar
+                    layout="controlsOnly"
+                    tone="light"
+                    className="!py-0"
+                    totalResults={total}
+                    location={resultsLocation}
+                    onLocationChange={handleLocationChange}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                    resultLabel="photographers"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <section className="relative bg-gradient-to-b from-[#0c0b0a] via-[#12100e] to-[#0c0b0a] pt-5 pb-3 sm:pt-6 sm:pb-4">
+          {/* Editorial title */}
+          <div className="border-b border-stone-200/80 bg-[#f6f3ed]">
+            <div className="container-default py-10 text-center sm:py-14 lg:py-16">
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[#8a7d62]">
+                The Portfolio Collection
+              </p>
+              <h1 className="font-display mt-4 text-[2.25rem] font-semibold leading-[1.1] tracking-tight text-brand-900 sm:text-5xl lg:text-[3.25rem]">
+                Photography
+              </h1>
+            </div>
+          </div>
+
+          {/* Portfolio grid */}
+          <section className="bg-[#f0ece4] py-10 sm:py-12 lg:py-16">
             <div className="container-default">
               {total === 0 ? (
-                <p className="mx-auto max-w-md text-center text-sm text-white/60">
+                <p className="mx-auto max-w-md text-center text-sm text-stone-600">
                   No photographers match this area. Try Kerala or another city from the menu above.
                 </p>
               ) : (
-                <ul className="mx-auto grid max-w-4xl grid-cols-1 gap-y-5 gap-x-4 min-[480px]:grid-cols-2 min-[480px]:gap-x-5 min-[480px]:gap-y-6 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-7">
-                  {displayedPhotographers.map((p, i) => (
-                    <li
-                      key={p.id}
-                      id={p.id}
-                      className="flex w-full justify-center scroll-mt-24 min-[480px]:max-w-none"
-                    >
-                      <article className="relative w-full max-w-[min(100%,184px)] min-[480px]:max-w-[11.5rem] lg:max-w-[12rem]">
-                        <button
-                          type="button"
-                          onClick={() => setOpenIndex(i)}
-                          className="group block min-h-[44px] w-full cursor-pointer rounded-xl border-0 bg-transparent p-0 text-left transition duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0b0a] hover:shadow-[0_10px_26px_-10px_rgba(0,0,0,0.5)]"
-                          aria-label={`Open reel: ${p.name}`}
-                        >
-                          <div className="relative aspect-[5/8] w-full overflow-hidden rounded-xl bg-neutral-900 shadow-[0_6px_20px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/10 transition duration-300 ease-out group-hover:ring-white/20 group-hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.6)]">
-                            <img
-                              src={p.image}
-                              alt=""
-                              className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-                            />
+                <ul className="mx-auto grid max-w-7xl grid-cols-1 gap-7 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3 lg:gap-10">
+                  {displayedPhotographers.map((p) => (
+                    <li key={p.id} id={p.id} className="scroll-mt-28">
+                      <article className="group relative overflow-hidden rounded-2xl bg-white shadow-[0_6px_28px_-12px_rgba(20,43,60,0.14)] ring-1 ring-stone-200/50 transition duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_22px_48px_-18px_rgba(15,118,110,0.18)] hover:ring-stone-300/60">
+                        <div className="relative aspect-[3/4] w-full overflow-hidden">
+                          <img
+                            src={p.image}
+                            alt=""
+                            className="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-[1.04]"
+                          />
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 via-50% to-black/10" />
 
-                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/15 via-transparent via-45% to-black/75 transition-opacity duration-300 group-hover:to-black/82" />
+                          {isPremiumVendor(p) ? (
+                            <p className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-wider text-brand-800 shadow-sm backdrop-blur-sm sm:left-4 sm:top-4 sm:text-[0.65rem]">
+                              Premium Vendor
+                            </p>
+                          ) : null}
 
-                            {p.reelVideoStyle ? (
-                              <div className="pointer-events-none absolute left-1/2 top-[36%] -translate-x-1/2 -translate-y-1/2 opacity-75 transition duration-300 group-hover:scale-105 group-hover:opacity-90">
-                                <PlayReelIcon compact />
-                              </div>
-                            ) : null}
+                          <div className="absolute right-3 top-3 z-10 sm:right-4 sm:top-4">
+                            <WishlistToggle photographyId={p.id} iconOnly className="shadow-md" />
+                          </div>
 
-                            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/92 via-black/40 to-transparent px-1.5 pb-1.5 pt-4">
-                              <div className="text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
-                                <h2 className="line-clamp-2 text-[0.6rem] font-semibold leading-[1.14] tracking-tight sm:text-[0.625rem]">
-                                  {p.name}
-                                </h2>
-                                <p className="mt-px text-[0.57rem] font-medium leading-tight text-white/85 sm:text-[0.6rem]">
-                                  {p.location}
-                                </p>
-                                <p className="mt-px text-[0.57rem] font-semibold tabular-nums leading-tight text-amber-100/95 sm:text-[0.6rem]">
-                                  {p.priceReel ?? p.price}
-                                </p>
-                              </div>
+                          <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-12 sm:px-4 sm:pb-4 sm:pt-16">
+                            <div className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]">
+                              <h2 className="text-lg font-bold leading-tight tracking-tight sm:text-xl">{p.name}</h2>
+                              <p className="mt-1 text-xs font-medium text-white/90 sm:text-sm">{p.location}</p>
+                              <p className="mt-2 text-sm font-semibold tabular-nums text-amber-100 sm:text-base">
+                                {p.priceReel ?? p.price}
+                              </p>
+                              <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-white/90 sm:text-sm">
+                                <span className="text-amber-200" aria-hidden>
+                                  ★
+                                </span>
+                                <span className="tabular-nums">{p.rating.toFixed(1)}</span>
+                              </p>
                             </div>
                           </div>
-                        </button>
-
-                        <div className="pointer-events-auto absolute right-0.5 top-0.5 z-20 origin-top-right scale-[0.75] sm:right-1 sm:top-1 sm:scale-[0.79]">
-                          <WishlistToggle photographyId={p.id} variant="reel" />
                         </div>
                       </article>
                     </li>
@@ -183,16 +179,7 @@ export default function PhotographyPage() {
           </section>
         </main>
 
-        <Footer />
-
-        {modalOpen ? (
-          <PhotographyReelModal
-            items={displayedPhotographers}
-            activeIndex={openIndex}
-            onClose={() => setOpenIndex(null)}
-            onSelectIndex={setOpenIndex}
-          />
-        ) : null}
+        <Footer variant="light" />
       </div>
     </>
   );

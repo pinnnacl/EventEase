@@ -80,6 +80,22 @@ export function WishlistProvider({ children }) {
     }));
   }, []);
 
+  const removeCatering = useCallback((entryId) => {
+    if (typeof entryId !== "string") return;
+    setWishlist((prev) => ({
+      ...prev,
+      catering: prev.catering.filter((x) => x !== entryId),
+    }));
+  }, []);
+
+  const removeDecoration = useCallback((entryId) => {
+    if (typeof entryId !== "string") return;
+    setWishlist((prev) => ({
+      ...prev,
+      decoration: prev.decoration.filter((x) => x !== entryId),
+    }));
+  }, []);
+
   const has = useCallback((venueId) => wishlist.venues.includes(venueId), [wishlist.venues]);
 
   const hasPhotography = useCallback(
@@ -102,10 +118,12 @@ export function WishlistProvider({ children }) {
       count: totalCount,
       toggle,
       togglePhotography,
+      removeCatering,
+      removeDecoration,
       has,
       hasPhotography,
     }),
-    [wishlist, ready, totalCount, toggle, togglePhotography, has, hasPhotography],
+    [wishlist, ready, totalCount, toggle, togglePhotography, removeCatering, removeDecoration, has, hasPhotography],
   );
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;

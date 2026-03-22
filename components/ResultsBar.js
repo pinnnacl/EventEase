@@ -25,7 +25,7 @@ function buildLocationOptions(currentLabel, propOptions) {
  * Tight marketplace-style results strip: inline location + sort.
  * Place inside `container-default`; full-width `border-b` on a parent for edge-to-edge divider.
  *
- * @param {{ tone?: "light" | "dark" }} props
+ * @param {{ tone?: "light" | "dark", layout?: "default" | "controlsOnly" }} props
  */
 export default function ResultsBar({
   totalResults,
@@ -37,6 +37,7 @@ export default function ResultsBar({
   resultLabel = "venues",
   className = "",
   tone = "light",
+  layout = "default",
 }) {
   const listboxId = useId();
   const locationId = useId();
@@ -183,28 +184,10 @@ export default function ResultsBar({
     <span className={`font-medium ${ink}`}>{displayLocation}</span>
   );
 
-  return (
-    <div ref={barRef} className={`w-full py-2 sm:py-2.5 ${className}`.trim()}>
-      <div className="flex flex-nowrap items-center justify-between gap-3">
-        <div className={`flex min-w-0 flex-1 flex-nowrap items-baseline gap-x-1 text-sm leading-snug ${lineMuted}`}>
-          {safeTotal === 0 ? (
-            <>
-              <span className="min-w-0 shrink truncate">No {resultLabel} in</span>
-              <span className="shrink-0">{locationTrigger}</span>
-            </>
-          ) : (
-            <>
-              <span className="min-w-0 shrink truncate">
-                Showing <span className={`font-medium ${ink}`}>{safeTotal}</span> {noun} in
-              </span>
-              <span className="shrink-0">{locationTrigger}</span>
-            </>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          <span className={`hidden text-xs sm:inline ${sortHint}`}>Sort</span>
-          <div className="relative">
+  const sortBlock = (
+    <div className="flex shrink-0 items-center gap-2">
+      <span className={`text-xs ${layout === "controlsOnly" ? "" : "hidden sm:inline"} ${sortHint}`}>Sort</span>
+      <div className="relative">
             <button
               ref={sortTriggerRef}
               type="button"
@@ -268,7 +251,43 @@ export default function ResultsBar({
               </ul>
             ) : null}
           </div>
+    </div>
+  );
+
+  if (layout === "controlsOnly") {
+    return (
+      <div ref={barRef} className={`w-full py-0 ${className}`.trim()}>
+        <div className="flex flex-wrap items-center justify-end gap-4 sm:gap-6">
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium ${sortHint}`}>Location</span>
+            {locationInteractive ? locationTrigger : <span className={`text-sm font-medium ${ink}`}>{displayLocation}</span>}
+          </div>
+          {sortBlock}
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={barRef} className={`w-full py-2 sm:py-2.5 ${className}`.trim()}>
+      <div className="flex flex-nowrap items-center justify-between gap-3">
+        <div className={`flex min-w-0 flex-1 flex-nowrap items-baseline gap-x-1 text-sm leading-snug ${lineMuted}`}>
+          {safeTotal === 0 ? (
+            <>
+              <span className="min-w-0 shrink truncate">No {resultLabel} in</span>
+              <span className="shrink-0">{locationTrigger}</span>
+            </>
+          ) : (
+            <>
+              <span className="min-w-0 shrink truncate">
+                Showing <span className={`font-medium ${ink}`}>{safeTotal}</span> {noun} in
+              </span>
+              <span className="shrink-0">{locationTrigger}</span>
+            </>
+          )}
+        </div>
+
+        {sortBlock}
       </div>
     </div>
   );
