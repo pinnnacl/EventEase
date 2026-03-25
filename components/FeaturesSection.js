@@ -9,15 +9,15 @@ const features = [
 
 export default function FeaturesSection() {
   return (
-    <section id="features" className="bg-white py-14 sm:py-16">
-      <div className="container-default">
+    <section id="features" className="w-full py-14 sm:py-16">
+      <div className="container-default w-full max-w-none">
         <SectionTitle
           title="Features List Section"
           description="Overview of the platform's key features, such as curated recommendations, personalized planning, and easy vendor discovery."
         />
         <div className="grid gap-4 md:grid-cols-2">
           {features.map((feature) => (
-            <div key={feature} className="rounded-xl border border-brand-100 bg-cloud-50 p-5">
+            <div key={feature} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
               <p className="font-medium text-slate-700">{feature}</p>
             </div>
           ))}

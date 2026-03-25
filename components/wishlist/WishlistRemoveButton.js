@@ -7,11 +7,11 @@ function HeartFilled({ className }) {
 }
 
 /**
- * @param {{ label: string, onRemove: () => void, className?: string, size?: "md" | "sm" }} props
+ * @param {{ label: string, onRemove: () => void, className?: string, size?: "md" | "sm" | "xs" }} props
  */
 export default function WishlistRemoveButton({ label, onRemove, className = "", size = "md" }) {
-  const box = size === "sm" ? "h-8 w-8" : "h-10 w-10";
-  const icon = size === "sm" ? "h-3.5 w-3.5" : "h-5 w-5";
+  const box = size === "xs" ? "h-7 w-7" : size === "sm" ? "h-8 w-8" : "h-10 w-10";
+  const icon = size === "xs" ? "h-3 w-3" : size === "sm" ? "h-3.5 w-3.5" : "h-5 w-5";
   return (
     <button
       type="button"

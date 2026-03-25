@@ -26,7 +26,7 @@ const items = [
 
 export default function WhyChooseUsSection() {
   return (
-    <Section id="about" className="bg-white">
+    <Section id="about">
       <SectionHeader
         title="Why Couples Choose EventEase"
         subtitle="A premium planning experience designed to feel simple, trustworthy, and joyful."

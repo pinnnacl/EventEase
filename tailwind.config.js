@@ -5,13 +5,28 @@ module.exports = {
     "./components/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
+    screens: {
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1440px",
+      "3xl": "1920px",
+    },
     extend: {
+      maxWidth: {
+        content: "80rem",
+        "content-wide": "87.5rem",
+      },
       fontFamily: {
         sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
         display: ["var(--font-display)", "Georgia", "serif"],
         arial: ["Arial", "Helvetica Neue", "Helvetica", "sans-serif"],
       },
       colors: {
+        /** Single app canvas — white; use bg-background / bg-canvas sitewide */
+        background: "#ffffff",
+        canvas: "#ffffff",
         brand: {
           50: "#ecfdf5",
           100: "#d1fae5",
@@ -22,7 +37,7 @@ module.exports = {
           900: "#042f2e",
         },
         wedding: {
-          cream: "#f8f5f0",
+          cream: "#ffffff",
           beige: "#efe6d9",
           gold: "#d4af37",
           softgold: "#e7c86e",
@@ -34,8 +49,8 @@ module.exports = {
         card: "0 8px 24px -14px rgba(31, 41, 55, 0.22)",
       },
       backgroundImage: {
-        "wedding-gradient": "linear-gradient(135deg, #f8f5f0 0%, #efe6d9 55%, #f4ebdc 100%)",
-        "gold-wash": "linear-gradient(120deg, rgba(212,175,55,0.18) 0%, rgba(248,245,240,0.75) 60%)",
+        "wedding-gradient": "linear-gradient(135deg, #ffffff 0%, #ffffff 100%)",
+        "gold-wash": "linear-gradient(120deg, rgba(212,175,55,0.14) 0%, rgba(255,255,255,0.92) 60%)",
       },
       keyframes: {
         "ee-dropdown-in": {

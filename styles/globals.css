@@ -2,22 +2,94 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Full-width layout — no centered max-width shell; inset via padding only */
+:root {
+  /* Single source of horizontal inset sitewide (no max-width column) */
+  --ee-container-px: clamp(16px, 5vw, 120px);
+  --ee-canvas: #ffffff;
+}
+
 html,
 body {
+  width: 100%;
+  max-width: none;
   margin: 0;
   padding: 0;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   color: #22303b;
-  background: #f8f5f0;
+  background: var(--ee-canvas);
   scroll-behavior: smooth;
+}
+
+#root,
+#__next {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 * {
   box-sizing: border-box;
 }
 
-.container-default {
-  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+@layer base {
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+@layer components {
+  .container-default {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: var(--ee-container-px);
+    padding-right: var(--ee-container-px);
+  }
+
+  /* Match header / full-bleed bars to the same horizontal inset as .container-default */
+  .px-container-fluid {
+    padding-left: var(--ee-container-px);
+    padding-right: var(--ee-container-px);
+  }
+
+  /* App shell: flex column, full viewport width (no margin auto) */
+  .page-wrapper {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+}
+
+@layer utilities {
+  /* Fluid type — use alongside font-display / font-semibold as needed */
+  .text-fluid-hero {
+    font-size: clamp(28px, 3vw, 48px);
+    line-height: 1.12;
+  }
+
+  .text-fluid-section-title {
+    font-size: clamp(24px, 2.25vw + 0.75rem, 42px);
+    line-height: 1.15;
+  }
+
+  .text-fluid-body {
+    font-size: clamp(1rem, 0.35vw + 0.92rem, 1.125rem);
+    line-height: 1.65;
+  }
+
+  .text-fluid-eyebrow {
+    font-size: clamp(0.65rem, 0.2vw + 0.62rem, 0.75rem);
+    line-height: 1.3;
+  }
 }
 
 .fade-up {

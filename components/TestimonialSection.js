@@ -17,8 +17,8 @@ const testimonials = [
 
 export default function TestimonialSection() {
   return (
-    <section id="testimonials" className="py-14 sm:py-16">
-      <div className="container-default">
+    <section id="testimonials" className="w-full py-14 sm:py-16">
+      <div className="container-default w-full max-w-none">
         <SectionTitle
           title="Testimonial Section"
           description="Customer testimonials and experiences with the platform and its verified vendors."

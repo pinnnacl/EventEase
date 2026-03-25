@@ -49,11 +49,11 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#e8decc] bg-[#f8f5f0]/85 backdrop-blur-md">
-      <div className="container-default flex h-16 items-center justify-between">
+    <header className="sticky top-0 z-40 w-full bg-background">
+      <div className="px-container-fluid flex h-16 w-full items-center gap-4">
         <Link
           href="/"
-          className="flex items-center gap-3 rounded-md outline-none ring-brand-500/40 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2"
+          className="flex shrink-0 items-center gap-3 rounded-md outline-none ring-brand-500/40 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2"
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white shadow-md">
             EE
@@ -61,8 +61,7 @@ export default function Navbar() {
           <span className="text-base font-semibold tracking-wide text-wedding-ink">EventEase Kerala</span>
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <nav className="hidden items-center gap-2 md:flex">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-2 md:flex">
             {links.map((item) =>
               item.href === "dropdown" ? (
                 <div key={item.label} className="group relative">
@@ -116,15 +115,16 @@ export default function Navbar() {
                 </Link>
               ),
             )}
-          </nav>
+        </nav>
 
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
           <Link
             href="/wishlist"
             aria-label={wishlistCount > 0 ? `Wishlist, ${wishlistCount} saved items` : "Wishlist"}
             className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full border-2 px-3 py-2 text-sm font-bold shadow-sm transition duration-200 hover:scale-[1.02] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 sm:px-4 ${
               wishlistCount > 0
-                ? "border-rose-200 bg-gradient-to-b from-rose-50 via-white to-white text-brand-900 ring-1 ring-rose-100/80"
-                : "border-brand-400 bg-gradient-to-b from-brand-50 via-white to-white text-brand-900 ring-1 ring-brand-100/80"
+                ? "border-rose-200 bg-white text-brand-900 ring-1 ring-rose-100/80"
+                : "border-brand-400 bg-white text-brand-900 ring-1 ring-brand-100/80"
             }`}
           >
             <span className={wishlistCount > 0 ? "text-rose-500" : "text-brand-600"}>

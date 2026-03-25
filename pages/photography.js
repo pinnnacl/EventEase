@@ -1,15 +1,14 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo } from "react";
 import Footer from "../components/Footer";
-import MarketingHeader from "../components/home/MarketingHeader";
 import WishlistToggle from "../components/WishlistToggle";
-import ResultsBar, {
+import {
   SORT_FEATURED,
   SORT_PRICE_ASC,
   SORT_PRICE_DESC,
   SORT_RATING,
-} from "../components/ResultsBar";
+} from "../lib/listingSortConstants";
 import { photographers } from "../data/photographers";
 
 function sortPhotographers(list, sortBy) {
@@ -41,7 +40,6 @@ function isPremiumVendor(p) {
 
 export default function PhotographyPage() {
   const router = useRouter();
-  const [sortBy, setSortBy] = useState(SORT_FEATURED);
 
   const resultsLocation = useMemo(() => {
     if (!router.isReady) return "Kerala";
@@ -51,22 +49,11 @@ export default function PhotographyPage() {
   }, [router.isReady, router.query.city, router.query.location]);
 
   const displayedPhotographers = useMemo(() => {
-    const sorted = sortPhotographers(photographers, sortBy);
+    const sorted = sortPhotographers(photographers, SORT_FEATURED);
     return sorted.filter((p) => photographerMatchesLocation(p, resultsLocation));
-  }, [sortBy, resultsLocation]);
+  }, [resultsLocation]);
 
   const total = displayedPhotographers.length;
-
-  const handleLocationChange = useCallback(
-    (next) => {
-      if (next === "Kerala") {
-        router.push({ pathname: "/photography" }, undefined, { scroll: false });
-        return;
-      }
-      router.push({ pathname: "/photography", query: { city: next } }, undefined, { scroll: false });
-    },
-    [router],
-  );
 
   return (
     <>
@@ -79,89 +66,45 @@ export default function PhotographyPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-[#faf8f5]">
-        <MarketingHeader />
-
-        <main>
-          {/* Top bar: explore + controls */}
-          <div className="border-b border-stone-200/90 bg-[#faf8f5]">
-            <div className="container-default py-5 sm:py-6">
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
-                <div className="min-w-0">
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500">Explore Talent</p>
-                  <p className="mt-2 text-base leading-snug text-stone-700 sm:text-lg">
-                    <span className="font-display text-xl font-semibold tabular-nums text-brand-900 sm:text-2xl">{total}</span>
-                    <span className="text-stone-600"> photographers in </span>
-                    <span className="font-medium text-stone-800">{resultsLocation}</span>
-                  </p>
-                </div>
-                <div className="shrink-0 lg:min-w-[20rem]">
-                  <ResultsBar
-                    layout="controlsOnly"
-                    tone="light"
-                    className="!py-0"
-                    totalResults={total}
-                    location={resultsLocation}
-                    onLocationChange={handleLocationChange}
-                    sortBy={sortBy}
-                    onSortChange={setSortBy}
-                    resultLabel="photographers"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Editorial title */}
-          <div className="border-b border-stone-200/80 bg-[#f6f3ed]">
-            <div className="container-default py-10 text-center sm:py-14 lg:py-16">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[#8a7d62]">
-                The Portfolio Collection
-              </p>
-              <h1 className="font-display mt-4 text-[2.25rem] font-semibold leading-[1.1] tracking-tight text-brand-900 sm:text-5xl lg:text-[3.25rem]">
-                Photography
-              </h1>
-            </div>
-          </div>
-
-          {/* Portfolio grid */}
-          <section className="bg-[#f0ece4] py-10 sm:py-12 lg:py-16">
-            <div className="container-default">
+      <div className="min-h-screen w-full max-w-none">
+        <main className="w-full max-w-none">
+          <section className="py-10 sm:py-12 lg:py-16">
+            <div className="container-default w-full max-w-none">
               {total === 0 ? (
-                <p className="mx-auto max-w-md text-center text-sm text-stone-600">
-                  No photographers match this area. Try Kerala or another city from the menu above.
+                <p className="w-full max-w-none text-center text-sm text-stone-600">
+                  No photographers match this area. Try Kerala or another city from the search bar.
                 </p>
               ) : (
-                <ul className="mx-auto grid max-w-7xl grid-cols-1 gap-7 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3 lg:gap-10">
+                <ul className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4 xl:gap-5">
                   {displayedPhotographers.map((p) => (
-                    <li key={p.id} id={p.id} className="scroll-mt-28">
-                      <article className="group relative overflow-hidden rounded-2xl bg-white shadow-[0_6px_28px_-12px_rgba(20,43,60,0.14)] ring-1 ring-stone-200/50 transition duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_22px_48px_-18px_rgba(15,118,110,0.18)] hover:ring-stone-300/60">
-                        <div className="relative aspect-[3/4] w-full overflow-hidden">
+                    <li key={p.id} id={p.id} className="scroll-mt-44 sm:scroll-mt-52">
+                      <article className="group relative overflow-hidden rounded-xl bg-white shadow-[0_4px_20px_-10px_rgba(20,43,60,0.14)] ring-1 ring-stone-200/50 transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-14px_rgba(15,118,110,0.16)] hover:ring-stone-300/60">
+                        <div className="relative aspect-[4/5] w-full overflow-hidden">
                           <img
                             src={p.image}
                             alt=""
-                            className="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-[1.04]"
+                            className="h-full w-full object-cover transition duration-300 ease-out group-hover:scale-[1.03]"
                           />
                           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 via-50% to-black/10" />
 
                           {isPremiumVendor(p) ? (
-                            <p className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-wider text-brand-800 shadow-sm backdrop-blur-sm sm:left-4 sm:top-4 sm:text-[0.65rem]">
+                            <p className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wider text-brand-800 shadow-sm backdrop-blur-sm sm:left-2.5 sm:top-2.5 sm:text-[0.6rem]">
                               Premium Vendor
                             </p>
                           ) : null}
 
-                          <div className="absolute right-3 top-3 z-10 sm:right-4 sm:top-4">
+                          <div className="absolute right-2 top-2 z-10 sm:right-2.5 sm:top-2.5">
                             <WishlistToggle photographyId={p.id} iconOnly className="shadow-md" />
                           </div>
 
-                          <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-12 sm:px-4 sm:pb-4 sm:pt-16">
-                            <div className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]">
-                              <h2 className="text-lg font-bold leading-tight tracking-tight sm:text-xl">{p.name}</h2>
-                              <p className="mt-1 text-xs font-medium text-white/90 sm:text-sm">{p.location}</p>
-                              <p className="mt-2 text-sm font-semibold tabular-nums text-amber-100 sm:text-base">
+                          <div className="absolute inset-x-0 bottom-0 px-2 pb-2 pt-8 sm:px-3 sm:pb-3 sm:pt-10">
+                            <div className="text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
+                              <h2 className="text-sm font-bold leading-tight tracking-tight sm:text-base">{p.name}</h2>
+                              <p className="mt-0.5 text-[0.65rem] font-medium text-white/90 sm:text-xs">{p.location}</p>
+                              <p className="mt-1 text-xs font-semibold tabular-nums text-amber-100 sm:text-sm">
                                 {p.priceReel ?? p.price}
                               </p>
-                              <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-white/90 sm:text-sm">
+                              <p className="mt-1 flex items-center gap-1 text-[0.65rem] font-medium text-white/90 sm:text-xs">
                                 <span className="text-amber-200" aria-hidden>
                                   ★
                                 </span>

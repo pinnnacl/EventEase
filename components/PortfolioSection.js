@@ -9,7 +9,7 @@ const portfolio = [
 export default function PortfolioSection() {
   return (
     <section id="portfolio" className="py-14 sm:py-16">
-      <div className="container-default">
+      <div className="container-default w-full max-w-none">
         <SectionTitle
           title="Portfolio List Section"
           description="Featured venues and real event highlights to inspire visitors and showcase vendor quality."

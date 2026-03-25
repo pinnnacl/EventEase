@@ -14,7 +14,7 @@ export default function WishlistTabs({ tabs, activeKey, onChange }) {
       role="tablist"
       aria-label="Wishlist categories"
     >
-      <div className="flex min-w-min rounded-xl bg-stone-200/60 p-1 ring-1 ring-stone-200/50">
+      <div className="flex min-w-min rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
         {tabs.map((tab) => {
           const active = tab.key === activeKey;
           return (

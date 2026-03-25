@@ -10,11 +10,11 @@ const quickLinks = [
 export default function Footer({ variant = "dark" }) {
   if (variant === "light") {
     return (
-      <footer className="border-t border-stone-200 bg-[#fafaf9] py-14 text-wedding-ink">
-        <div className="container-default grid gap-10 md:grid-cols-3 md:gap-8">
+      <footer className="w-full border-t border-stone-200 bg-background py-14 text-wedding-ink">
+        <div className="container-default grid w-full max-w-none gap-10 md:grid-cols-3 md:gap-8">
           <div>
             <p className="font-display text-xl font-semibold text-brand-800">EventEase Kerala</p>
-            <p className="mt-3 max-w-sm text-sm leading-relaxed text-stone-600">
+            <p className="mt-3 max-w-none text-sm leading-relaxed text-stone-600">
               Premium wedding planning support with trusted local venues and service partners.
             </p>
           </div>
@@ -48,7 +48,7 @@ export default function Footer({ variant = "dark" }) {
             </div>
           </div>
         </div>
-        <p className="container-default mt-12 border-t border-stone-200/80 pt-8 text-center text-xs text-stone-500">
+        <p className="container-default mt-12 w-full max-w-none border-t border-stone-200/80 pt-8 text-center text-xs text-stone-500">
           © {new Date().getFullYear()} EventEase Kerala. All rights reserved.
         </p>
       </footer>
@@ -56,11 +56,11 @@ export default function Footer({ variant = "dark" }) {
   }
 
   return (
-    <footer className="bg-brand-900 py-12 text-white">
-      <div className="container-default grid gap-8 md:grid-cols-3">
+    <footer className="w-full bg-brand-900 py-12 text-white">
+      <div className="container-default grid w-full max-w-none gap-8 md:grid-cols-3">
         <div>
           <h3 className="text-xl font-semibold">EventEase Kerala</h3>
-          <p className="mt-3 max-w-sm text-sm leading-6 text-white/80">
+          <p className="mt-3 max-w-none text-sm leading-6 text-white/80">
             Premium wedding planning support with trusted local venues and service partners.
           </p>
         </div>

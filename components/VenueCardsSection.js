@@ -9,7 +9,7 @@ export default function VenueCardsSection() {
   const featured = venues.slice(0, featuredVenueCount);
 
   return (
-    <Section id="venues" className="bg-wedding-gradient">
+    <Section id="venues">
       <SectionHeader
         title="Featured Venues"
         subtitle="Explore elegant spaces for ceremonies, receptions, and family celebrations."

@@ -1,7 +1,7 @@
 export default function Section({ id, className = "", children }) {
   return (
-    <section id={id} className={`fade-up py-14 sm:py-20 ${className}`}>
-      <div className="container-default">{children}</div>
+    <section id={id} className={`fade-up w-full py-[clamp(40px,6vw,120px)] ${className}`}>
+      <div className="container-default w-full max-w-none">{children}</div>
     </section>
   );
 }

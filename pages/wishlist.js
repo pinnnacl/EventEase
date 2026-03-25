@@ -1,6 +1,5 @@
 import Head from "next/head";
 import Footer from "../components/Footer";
-import MarketingHeader from "../components/home/MarketingHeader";
 import WishlistMain from "../components/wishlist/WishlistPage";
 
 export default function WishlistRoute() {
@@ -12,10 +11,11 @@ export default function WishlistRoute() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-[#faf8f5]">
-        <MarketingHeader />
+      <div className="flex min-h-0 w-full max-w-none flex-1 flex-col">
         <WishlistMain />
-        <Footer variant="light" />
+        <div className="mt-auto shrink-0">
+          <Footer variant="light" />
+        </div>
       </div>
     </>
   );

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import Button from "../components/Button";
-import MarketingHeader from "../components/home/MarketingHeader";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,10 +42,9 @@ export default function LoginPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-wedding-cream">
-        <MarketingHeader />
-        <main className="container-default py-12 sm:py-16">
-          <div className="mx-auto w-full max-w-md rounded-2xl border border-[#e8decc] bg-white p-8 shadow-card">
+      <div className="min-h-screen w-full max-w-none">
+        <main className="container-default flex w-full max-w-none justify-center py-12 sm:py-16">
+          <div className="w-full max-w-md rounded-2xl border border-[#e8decc] bg-white p-8 shadow-card">
             <h1 className="text-2xl font-bold text-wedding-ink">Sign in</h1>
             <p className="mt-2 text-sm text-slate-600">
               Use your EventEase account to continue planning.

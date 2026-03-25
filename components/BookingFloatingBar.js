@@ -67,7 +67,7 @@ export default function BookingFloatingBar({
 
   return (
     <div
-      className={`pointer-events-none fixed left-0 right-0 z-40 flex justify-center px-4 ${className}`}
+      className={`pointer-events-none fixed left-0 right-0 z-40 flex justify-stretch px-[var(--ee-container-px)] ${className}`}
       style={{
         bottom: `calc(max(1rem, env(safe-area-inset-bottom, 0px)) + ${liftPx}px)`,
       }}
@@ -76,7 +76,7 @@ export default function BookingFloatingBar({
     >
       <div
         ref={barRef}
-        className="pointer-events-auto w-full max-w-[min(42rem,calc(100vw-2rem))] rounded-[1.75rem] border border-stone-200/70 bg-[#fdfbf7]/95 px-4 py-3 shadow-[0_8px_32px_-14px_rgba(20,43,60,0.14),0_2px_8px_-4px_rgba(20,43,60,0.06)] backdrop-blur-md sm:rounded-full sm:px-5 sm:py-3"
+        className="pointer-events-auto w-full max-w-none rounded-[1.75rem] border border-stone-200/70 bg-white/95 px-4 py-3 shadow-md backdrop-blur-md sm:rounded-full sm:px-5 sm:py-3"
       >
         <div
           className={`flex flex-col gap-3.5 sm:flex-row sm:items-center sm:gap-5 ${availabilityText ? "sm:justify-between" : "sm:justify-end"}`}

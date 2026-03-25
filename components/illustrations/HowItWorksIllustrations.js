@@ -7,13 +7,13 @@ const teal = "#0f766e";
 const tealMuted = "#99f6e4";
 const gold = "#d4af37";
 const goldSoft = "#fef9e8";
-const cream = "#f8f5f0";
+const cream = "#ffffff";
 const ink = "#334155";
 
 const baseSvgProps = {
   xmlns: "http://www.w3.org/2000/svg",
   viewBox: "0 0 360 220",
-  className: "h-full w-full max-h-[200px]",
+  className: "h-auto w-full max-h-[5.5rem] sm:max-h-[6.5rem]",
   fill: "none",
   role: "img",
 };

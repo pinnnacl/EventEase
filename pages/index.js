@@ -1,6 +1,4 @@
 import Head from "next/head";
-import MarketingHeader from "../components/home/MarketingHeader";
-import HomeHero from "../components/home/HomeHero";
 import HowItWorksSection from "../components/HowItWorksSection";
 import WeddingPackagesSection from "../components/WeddingPackagesSection";
 import WhyChooseUsSection from "../components/WhyChooseUsSection";
@@ -20,10 +18,8 @@ export default function HomePage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-[#fafaf9]">
-        <MarketingHeader />
-        <main>
-          <HomeHero />
+      <div className="min-h-screen w-full max-w-none">
+        <main className="w-full max-w-none">
           <HowItWorksSection />
           <WeddingPackagesSection />
           <WhyChooseUsSection />
