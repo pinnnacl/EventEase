@@ -41,7 +41,7 @@ const CHIPS = [
 ];
 
 const chipBase =
-  "inline-flex max-w-full min-h-[44px] cursor-pointer items-center gap-2 rounded-full border border-stone-200/70 bg-white/90 px-4 py-2 text-left text-sm font-medium text-stone-700 shadow-sm backdrop-blur-sm transition-[opacity,transform,background-color,border-color,box-shadow] duration-300 ease-out hover:scale-105 hover:border-stone-300/90 hover:bg-white hover:text-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 active:scale-100 sm:min-h-0";
+  "inline-flex max-w-full min-h-[44px] cursor-pointer items-center gap-2 rounded-full border border-[#D7EAE8] bg-[#F6FBFB] px-4 py-2 text-left text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_18px_-18px_rgba(20,43,60,0.22)] backdrop-blur-sm transition-[opacity,transform,background-color,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-[#B9DDD9] hover:bg-white hover:text-[#0F172A] hover:shadow-[0_1px_2px_rgba(15,23,42,0.06),0_14px_24px_-18px_rgba(20,43,60,0.26)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 active:translate-y-0 sm:min-h-0";
 
 /**
  * Gemini-style suggestion chips below the hero AI search bar.
@@ -57,7 +57,7 @@ export default function SearchSuggestions({ onSelect }) {
 
   return (
     <div
-      className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3"
+      className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-5 sm:gap-3"
       role="group"
       aria-label="Suggested searches"
     >
@@ -71,7 +71,7 @@ export default function SearchSuggestions({ onSelect }) {
           }`}
           style={{ transitionDelay: show ? `${80 + i * 70}ms` : "0ms" }}
         >
-          <Icon className="h-4 w-4 shrink-0 text-brand-600/80" />
+          <Icon className="h-4 w-4 shrink-0 text-[#0F766E]/85" />
           <span className="min-w-0 leading-snug">{text}</span>
         </button>
       ))}

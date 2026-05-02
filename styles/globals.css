@@ -7,6 +7,11 @@
   /* Single source of horizontal inset sitewide (no max-width column) */
   --ee-container-px: clamp(16px, 5vw, 120px);
   --ee-canvas: #ffffff;
+  --ee-brand: #0f766e;
+  --ee-brand-strong: #115e59;
+  --ee-text-heading: #0f172a;
+  --ee-text-body: #475569;
+  --ee-text-secondary: #64748b;
 }
 
 html,
@@ -16,9 +21,11 @@ body {
   margin: 0;
   padding: 0;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  color: #22303b;
+  color: var(--ee-text-body);
   background: var(--ee-canvas);
   scroll-behavior: smooth;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: optimizeLegibility;
 }
 
 #root,
@@ -34,6 +41,22 @@ body {
 }
 
 @layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--ee-text-heading);
+    letter-spacing: -0.015em;
+    font-weight: 650;
+  }
+
+  p {
+    color: var(--ee-text-body);
+    line-height: 1.58;
+  }
+
   img {
     max-width: 100%;
     height: auto;
@@ -106,4 +129,88 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes heroKenBurns {
+  from {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(0, -1.6%, 0);
+  }
+}
+
+/* Vendor dashboard — react-calendar */
+.vendor-calendar-wrap .vendor-calendar {
+  width: 100%;
+  max-width: 100%;
+  font-family: inherit;
+  border: 1px solid rgb(231 229 228 / 0.9);
+  border-radius: 1rem;
+  padding: 0.5rem;
+  background: rgb(255 255 255);
+}
+
+.vendor-calendar-wrap .react-calendar__navigation {
+  margin-bottom: 0.5rem;
+}
+
+.vendor-calendar-wrap .react-calendar__navigation button {
+  border-radius: 0.5rem;
+  font-weight: 600;
+  color: rgb(15 118 110);
+  min-height: 2.25rem;
+}
+
+.vendor-calendar-wrap .react-calendar__navigation button:enabled:hover,
+.vendor-calendar-wrap .react-calendar__navigation button:enabled:focus {
+  background: rgb(240 253 250);
+}
+
+.vendor-calendar-wrap .react-calendar__month-view__weekdays {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgb(120 113 108);
+}
+
+.vendor-calendar-wrap .react-calendar__tile {
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.25rem;
+  font-size: 0.875rem;
+}
+
+.vendor-calendar-wrap .react-calendar__tile:enabled:hover,
+.vendor-calendar-wrap .react-calendar__tile:enabled:focus {
+  background: rgb(240 253 250);
+}
+
+/* Today: ring only (avoid looking like an "available" state in the legend) */
+.vendor-calendar-wrap .react-calendar__tile--now:not(.vendor-cal-booked) {
+  background: rgb(255 255 255) !important;
+  box-shadow: inset 0 0 0 2px rgb(13 148 136);
+  font-weight: 600;
+  color: rgb(15 118 110);
+}
+
+.vendor-calendar-wrap .vendor-cal-booked {
+  background: rgb(255 228 230) !important;
+  color: rgb(136 19 55);
+  font-weight: 600;
+}
+
+.vendor-calendar-wrap .vendor-cal-booked:enabled:hover,
+.vendor-calendar-wrap .vendor-cal-booked:enabled:focus {
+  background: rgb(254 205 211) !important;
+}
+
+.vendor-calendar-wrap .react-calendar__tile--active {
+  background: rgb(13 148 136) !important;
+  color: white;
+}
+
+.vendor-calendar-wrap .vendor-cal-booked.react-calendar__tile--active {
+  background: rgb(190 18 60) !important;
+  color: white;
 }

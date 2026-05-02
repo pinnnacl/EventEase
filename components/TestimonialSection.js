@@ -3,7 +3,7 @@ import SectionTitle from "./SectionTitle";
 const testimonials = [
   {
     name: "Anjali & Rohit",
-    text: "EventEase Kerala helped us find a perfect venue and amazing decorators in just two days."
+    text: "THAALI helped us find a perfect venue and amazing decorators in just two days."
   },
   {
     name: "Fathima N",

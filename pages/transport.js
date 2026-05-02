@@ -5,7 +5,7 @@ export default function TransportPage() {
   return (
     <>
       <Head>
-        <title>Transport | EventEase Kerala</title>
+        <title>Transport | THAALI</title>
         <meta name="description" content="Guest shuttles, bridal cars, and logistics for Kerala weddings." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>

@@ -1,0 +1,703 @@
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import ResponsiveVendorImage from "../images/ResponsiveVendorImage";
+import VenueDistanceText from "../venues/VenueDistanceText";
+import AmenityChips from "./AmenityChips";
+import PricingCard from "./PricingCard";
+import ReviewList from "./ReviewList";
+import SectionContainer from "./SectionContainer";
+import SectionTabs from "./SectionTabs";
+import VenueGallery from "./VenueGallery";
+import { useUserGeolocation } from "../../hooks/useUserGeolocation";
+import { isValidYmd } from "../../lib/eventDateYmd";
+import { readStoredEventDateYmd } from "../../lib/wishlistActions";
+import { getPublicVenueDetailRows } from "../../lib/venueDetails";
+import VenueDetailsRows from "./VenueDetailsRows";
+
+function IconUsers({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+      />
+    </svg>
+  );
+}
+
+function IconTag({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+    </svg>
+  );
+}
+
+function IconMapPin({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function IconCheck({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+function IconPhone({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+      />
+    </svg>
+  );
+}
+
+function IconLines({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h10" />
+    </svg>
+  );
+}
+
+function IconStar({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+}
+
+/** @param {string} ymd */
+function formatYmdLong(ymd) {
+  if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd;
+  const [y, m, d] = ymd.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+}
+
+const VENUE_SECTION_TABS = [
+  { id: "venue-section-about", label: "About" },
+  { id: "venue-section-venue-details", label: "Venue Details" },
+  { id: "venue-section-photos", label: "Photos" },
+  { id: "venue-section-pricing", label: "Pricing" },
+  { id: "venue-section-reviews", label: "Reviews" },
+];
+
+export default function VenueDetailView({
+  venue,
+  similar,
+  demo = false,
+  availability: availabilityProp = { date: null, unavailableSelf: false, similarUnavailableIds: [] },
+  showPendingPreviewBanner = false,
+}) {
+  const images = useMemo(() => (Array.isArray(venue.galleryImages) ? venue.galleryImages : []), [venue.galleryImages]);
+  const galleryResponsive = useMemo(
+    () => (Array.isArray(venue.galleryImagesResponsive) ? venue.galleryImagesResponsive : []),
+    [venue.galleryImagesResponsive],
+  );
+  const [carousel, setCarousel] = useState(0);
+  const [activeTag, setActiveTag] = useState(0);
+  const [activeSectionId, setActiveSectionId] = useState("venue-section-about");
+  const heroResponsive = useMemo(() => {
+    if (galleryResponsive[carousel]) return galleryResponsive[carousel];
+    if (carousel === 0 && venue.profileImageResponsive) return venue.profileImageResponsive;
+    return null;
+  }, [galleryResponsive, carousel, venue.profileImageResponsive]);
+  const [lightbox, setLightbox] = useState(null);
+
+  const geo = useUserGeolocation();
+  const router = useRouter();
+  const avDate = availabilityProp?.date ?? null;
+  const avSimilarKey = Array.isArray(availabilityProp?.similarUnavailableIds)
+    ? availabilityProp.similarUnavailableIds.join(",")
+    : "";
+  const av = useMemo(
+    () => ({
+      date: avDate,
+      unavailableSelf: Boolean(availabilityProp?.unavailableSelf),
+      similarUnavailableIds: Array.isArray(availabilityProp?.similarUnavailableIds)
+        ? availabilityProp.similarUnavailableIds
+        : [],
+    }),
+    [avDate, avSimilarKey, availabilityProp?.unavailableSelf],
+  );
+
+  const similarIdsKey = useMemo(() => similar.map((s) => s.id).join(","), [similar]);
+
+  const [storedYmd, setStoredYmd] = useState(null);
+  useEffect(() => {
+    setStoredYmd(readStoredEventDateYmd());
+  }, []);
+
+  const urlYmd = useMemo(() => {
+    if (!router.isReady) return null;
+    const d = router.query.date;
+    if (typeof d !== "string") return null;
+    const s = d.trim().slice(0, 10);
+    return isValidYmd(s) ? s : null;
+  }, [router.isReady, router.query.date]);
+
+  const effectiveYmd = urlYmd ?? storedYmd;
+  const useServer = Boolean(effectiveYmd) && Boolean(av.date) && effectiveYmd === av.date;
+
+  const [availabilityPending, setAvailabilityPending] = useState(false);
+  const [fetchedSelfUnavailable, setFetchedSelfUnavailable] = useState(/** @type {boolean | null} */ (null));
+  const [fetchedUnavailableSet, setFetchedUnavailableSet] = useState(/** @type {Set<string> | null} */ (null));
+
+  useEffect(() => {
+    if (demo || !effectiveYmd) {
+      setAvailabilityPending(false);
+      setFetchedSelfUnavailable(null);
+      setFetchedUnavailableSet(null);
+      return;
+    }
+    if (useServer) {
+      setAvailabilityPending(false);
+      setFetchedSelfUnavailable(null);
+      setFetchedUnavailableSet(null);
+      return;
+    }
+    const ids = [venue.id, ...similar.map((s) => s.id)].filter(Boolean);
+    if (!ids.length) return;
+    setAvailabilityPending(true);
+    setFetchedSelfUnavailable(null);
+    setFetchedUnavailableSet(null);
+    let cancelled = false;
+    const q = new URLSearchParams();
+    q.set("date", effectiveYmd);
+    q.set("ids", ids.join(","));
+    fetch(`/api/public/venues-availability?${q.toString()}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !data?.ok) return;
+        const u = new Set(data.unavailableIds || []);
+        setFetchedSelfUnavailable(u.has(venue.id));
+        setFetchedUnavailableSet(u);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFetchedSelfUnavailable(false);
+          setFetchedUnavailableSet(new Set());
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAvailabilityPending(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [demo, effectiveYmd, useServer, venue.id, similarIdsKey, av.date]);
+
+  const unavailableOnSelectedDate = demo
+    ? false
+    : useServer
+      ? av.unavailableSelf
+      : availabilityPending
+        ? null
+        : Boolean(fetchedSelfUnavailable);
+
+  const similarUnavailable = useCallback(
+    (id) => {
+      if (demo) return false;
+      if (useServer) return av.similarUnavailableIds.includes(id);
+      if (availabilityPending) return false;
+      return fetchedUnavailableSet?.has(id) ?? false;
+    },
+    [demo, useServer, av.similarUnavailableIds, availabilityPending, fetchedUnavailableSet],
+  );
+
+  const eventDateLabel = effectiveYmd ? formatYmdLong(effectiveYmd) : null;
+
+  const similarHref = useCallback(
+    (vid) => {
+      if (demo) return "/venue/demo";
+      const base =
+        venue.category === "Photographer"
+          ? `/photography/${vid}`
+          : venue.category === "Makeup"
+            ? `/makeup/${vid}`
+            : `/venue/${vid}`;
+      return effectiveYmd ? `${base}?date=${encodeURIComponent(effectiveYmd)}` : base;
+    },
+    [demo, effectiveYmd, venue.category],
+  );
+
+  const next = useCallback(() => {
+    setCarousel((i) => (images.length ? (i + 1) % images.length : 0));
+  }, [images.length]);
+
+  const prev = useCallback(() => {
+    setCarousel((i) => (images.length ? (i - 1 + images.length) % images.length : 0));
+  }, [images.length]);
+
+  const isVenue = venue.category === "Venue";
+
+  const sectionTabsForNav = useMemo(
+    () =>
+      VENUE_SECTION_TABS.map((t) =>
+        t.id === "venue-section-venue-details" ? { ...t, label: isVenue ? "Venue Details" : "Highlights" } : t,
+      ),
+    [isVenue],
+  );
+
+  const highlights = useMemo(() => {
+    const f = (venue.facilities || []).slice(0, 3);
+    if (f.length || !isVenue) return f;
+    const rows = getPublicVenueDetailRows(venue.venueDetails);
+    return rows
+      .filter((r) => r.description !== "Not specified")
+      .slice(0, 3)
+      .map((r) => r.title);
+  }, [venue.facilities, venue.venueDetails, isVenue]);
+  const heroEyebrow = isVenue ? "Venue" : venue.category || "Vendor";
+
+  const locationLabel = [venue.city, venue.state].filter(Boolean).join(", ") || venue.location || "";
+  /** Location card + map caption: vendor `place` only (e.g. Thiruvankulam). Never venue name or full address. */
+  const primaryPlaceLabel = venue.place?.trim() || "";
+  const mapQuery = encodeURIComponent(
+    venue.lat != null && venue.lng != null
+      ? `${venue.lat},${venue.lng}`
+      : venue.location?.trim() || venue.place?.trim() || locationLabel,
+  );
+
+  const tagPills = useMemo(() => {
+    const f = venue.facilities || [];
+    if (f.length) {
+      return f
+        .slice(0, 8)
+        .map((x) => String(x).trim())
+        .filter(Boolean);
+    }
+    if (isVenue) {
+      const rows = getPublicVenueDetailRows(venue.venueDetails);
+      const fromDetails = rows
+        .filter((r) => r.description !== "Not specified")
+        .slice(0, 8)
+        .map((r) => r.title);
+      if (fromDetails.length) return fromDetails;
+    }
+    const loc =
+      venue.place?.trim() ||
+      [venue.city, venue.state].filter(Boolean).join(", ") ||
+      "";
+    return [venue.category, loc.split(",")[0]?.trim()].filter(Boolean).slice(0, 4);
+  }, [venue.facilities, venue.category, venue.city, venue.state, venue.place, venue.venueDetails, isVenue]);
+
+  const amenityItems = useMemo(() => {
+    if (isVenue) {
+      const rows = getPublicVenueDetailRows(venue.venueDetails);
+      const labels = rows.filter((r) => r.description !== "Not specified").map((r) => r.title);
+      if (labels.length) return labels;
+    }
+    const f = (venue.facilities || []).map((x) => String(x).trim()).filter(Boolean);
+    if (f.length) return f;
+    return tagPills;
+  }, [venue.facilities, venue.venueDetails, tagPills, isVenue]);
+
+  const pricingBullets = useMemo(() => {
+    const lines = [];
+    const cap = venue.capacity?.trim();
+    if (cap) lines.push(`Hosts up to ${cap} guests`);
+    if (isVenue) {
+      getPublicVenueDetailRows(venue.venueDetails)
+        .filter((r) => r.description !== "Not specified")
+        .slice(0, 4)
+        .forEach((r) => lines.push(`${r.title}: ${r.description}`));
+    } else {
+      (venue.facilities || []).forEach((x) => {
+        const s = String(x).trim();
+        if (s) lines.push(s);
+      });
+    }
+    const out = [...new Set(lines)];
+    const extras = ["Custom packages tailored to your event", "Contact the host for a detailed quote"];
+    for (const e of extras) {
+      if (out.length >= 6) break;
+      if (!out.includes(e)) out.push(e);
+    }
+    return out.slice(0, 6);
+  }, [venue.capacity, venue.facilities, venue.venueDetails, isVenue]);
+
+  const reviewItems = useMemo(() => {
+    if (demo) {
+      return [
+        {
+          id: "demo-r1",
+          author: "Anjali & Rahul",
+          rating: 5,
+          text: "Beautiful space and a responsive team. Our families loved the layout and flow of the day.",
+          date: "Dec 2024",
+        },
+        {
+          id: "demo-r2",
+          author: "Meera K.",
+          rating: 4.5,
+          text: "Great value for our reception. Clear communication and smooth coordination.",
+          date: "Nov 2024",
+        },
+      ];
+    }
+    return [];
+  }, [demo]);
+
+  const scrollToSection = useCallback((id) => {
+    setActiveSectionId(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  useEffect(() => {
+    const elements = sectionTabsForNav.map((t) => document.getElementById(t.id)).filter(Boolean);
+    if (elements.length === 0) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting && e.intersectionRatio > 0.06)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        const id = visible[0]?.target?.id;
+        if (id) setActiveSectionId(id);
+      },
+      { root: null, rootMargin: "-12% 0px -48% 0px", threshold: [0, 0.12, 0.25, 0.45] },
+    );
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [venue.id, sectionTabsForNav]);
+
+  const priceDisplay = venue.priceRange?.trim() || "Ask for quote";
+
+  return (
+    <div className="w-full bg-white text-slate-800">
+      {showPendingPreviewBanner ? (
+        <div
+          className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-sm font-medium text-amber-950"
+          role="status"
+        >
+          Admin preview — this listing is not public yet (status: {venue.status}). This is the same page couples will
+          see after approval.
+        </div>
+      ) : null}
+      {/* Hero — full-width banner + floating info card (~10–15% of image height overlap) */}
+      <section className="relative border-b border-stone-200/80 bg-white">
+        <div className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+          {/* Outer: bottom padding only — card is positioned vs image wrapper below */}
+          <div className="pb-[clamp(6rem,16vw,8.5rem)]">
+            <div className="relative">
+              <div className="relative overflow-hidden rounded-2xl bg-slate-200 shadow-[0_12px_40px_-20px_rgba(15,23,42,0.25)] ring-1 ring-stone-200/60">
+                <div className="relative min-h-[min(72vh,420px)] w-full sm:min-h-[320px] lg:aspect-[2.2/1] lg:min-h-0">
+                {images[0] ? (
+                  <ResponsiveVendorImage
+                    responsive={heroResponsive}
+                    src={images[carousel] || images[0]}
+                    alt=""
+                    className="h-full min-h-[min(72vh,420px)] w-full object-cover object-center transition duration-500 ease-out sm:min-h-[320px] lg:min-h-full"
+                    sizes="(max-width: 1280px) 100vw, 1152px"
+                    loading={carousel === 0 ? "eager" : "lazy"}
+                    fetchPriority={carousel === 0 ? "high" : "low"}
+                  />
+                ) : (
+                  <div className="flex h-full min-h-[280px] items-center justify-center bg-slate-200 text-sm text-slate-500">
+                    No image
+                  </div>
+                )}
+                {/* Light vignette: readability for badge & carousel; details live on card */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/35 to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/50 via-black/15 to-transparent" />
+
+                <div className="pointer-events-auto absolute right-3 top-3 z-10 sm:right-5 sm:top-5">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-md ring-1 ring-white/40">
+                    <IconStar className="h-3.5 w-3.5 text-amber-500" aria-hidden />
+                    THAALI
+                  </span>
+                </div>
+
+                {images.length > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={prev}
+                      className="absolute left-3 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md transition hover:bg-white sm:top-1/2"
+                      aria-label="Previous image"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={next}
+                      className="absolute right-3 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md transition hover:bg-white sm:right-5 sm:top-1/2"
+                      aria-label="Next image"
+                    >
+                      ›
+                    </button>
+                    <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-1.5 sm:bottom-10">
+                      {images.slice(0, 5).map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          aria-label={`Go to slide ${i + 1}`}
+                          onClick={() => setCarousel(i)}
+                          className={`h-2 rounded-full transition ${carousel === i ? "w-6 bg-white" : "w-2 bg-white/50"}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Floating panel: top at ~88% of image height ⇒ ~12% of image covered by card */}
+            <div className="pointer-events-none absolute inset-x-0 top-[88%] z-20 flex justify-center px-3 sm:px-4">
+              <div className="pointer-events-auto w-full max-w-4xl">
+                <div className="rounded-2xl border border-slate-200/90 bg-white/90 px-5 py-5 shadow-[0_24px_56px_-16px_rgba(15,23,42,0.2),0_8px_24px_-12px_rgba(15,23,42,0.1)] backdrop-blur-md sm:rounded-[1.25rem] sm:px-8 sm:py-6">
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+                    <div className="min-w-0 flex-1 lg:max-w-[min(100%,28rem)]">
+                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#0F766E] sm:text-xs">
+                        {heroEyebrow}
+                      </p>
+                      <h1 className="font-display mt-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-3xl lg:text-[2rem]">
+                        {venue.businessName}
+                      </h1>
+                    </div>
+
+                    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-stretch lg:flex-nowrap lg:justify-end">
+                      {isVenue ? (
+                        <div className="flex min-w-0 flex-1 items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3 ring-1 ring-slate-200/70 sm:min-w-[9.5rem] sm:flex-initial lg:py-3.5">
+                          <IconUsers className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
+                          <div className="min-w-0">
+                            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Capacity</p>
+                            <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-[0.9375rem]">
+                              {venue.capacity?.trim() || "On request"}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex min-w-0 flex-1 items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3 ring-1 ring-slate-200/70 sm:min-w-[9.5rem] sm:flex-initial lg:py-3.5">
+                          <IconPhone className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
+                          <div className="min-w-0">
+                            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Contact</p>
+                            <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-[0.9375rem]">
+                              {venue.phone?.trim() || "On inquiry"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex min-w-0 flex-1 items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3 ring-1 ring-slate-200/70 sm:min-w-[9.5rem] sm:flex-initial lg:py-3.5">
+                        <IconTag className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
+                        <div className="min-w-0">
+                          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Price</p>
+                          <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-[0.9375rem]">
+                            {venue.priceRange?.trim() || "Ask for quote"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex min-w-[0] flex-1 items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3 ring-1 ring-slate-200/70 sm:min-w-[11rem] sm:flex-initial lg:max-w-[14rem] lg:py-3.5">
+                        <IconMapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
+                        <div className="min-w-0">
+                          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Location</p>
+                          <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900 sm:text-[0.9375rem]">
+                            {primaryPlaceLabel || <span className="font-medium text-slate-400">Area not listed</span>}
+                          </p>
+                          <VenueDistanceText
+                            venueLat={venue.lat}
+                            venueLng={venue.lng}
+                            viewerLat={geo.viewerLat}
+                            viewerLng={geo.viewerLng}
+                            viewerAccuracyM={geo.viewerAccuracyM}
+                            status={geo.status}
+                            usedFallback={geo.usedFallback}
+                            className="mt-2"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {effectiveYmd && !demo ? (
+                    availabilityPending ? (
+                      <p className="mt-5 border-t border-slate-200/80 pt-4 text-sm text-slate-600">
+                        Checking availability for {eventDateLabel}…
+                      </p>
+                    ) : unavailableOnSelectedDate ? (
+                      <div
+                        className="mt-5 rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950"
+                        role="status"
+                      >
+                        Not available on <span className="whitespace-nowrap">{eventDateLabel}</span> —{" "}
+                        {isVenue ? "the host has" : "the vendor has"} marked this date as booked or blocked.
+                      </div>
+                    ) : null
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </section>
+
+      <div className="border-b border-stone-100 bg-white">
+        <div className="sticky top-0 z-20 border-b border-stone-100/90 bg-white/95 px-4 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/90 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">
+            <SectionTabs tabs={sectionTabsForNav} activeId={activeSectionId} onSelect={scrollToSection} />
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-6xl space-y-14 px-4 py-10 pb-28 sm:space-y-16 sm:px-6 sm:pb-32 lg:px-8 lg:py-12">
+          <SectionContainer
+            id="venue-section-about"
+            title={
+              <span className="flex items-center gap-2">
+                <IconLines className="h-6 w-6 shrink-0 text-[#0F766E]" aria-hidden />
+                {isVenue ? "About the space" : "About"}
+              </span>
+            }
+          >
+            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-start">
+              <div>
+                <p className="whitespace-pre-line text-base leading-relaxed text-slate-600">
+                  {venue.description?.trim() ||
+                    (isVenue
+                      ? "This venue is listed on THAALI. Contact the host for full details, packages, and availability."
+                      : "This vendor is listed on THAALI. Review pricing and portfolio details below.")}
+                </p>
+                {highlights.length ? (
+                  <ul className="mt-6 space-y-2">
+                    {highlights.map((h) => (
+                      <li key={h} className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                        <IconCheck className="h-4 w-4 shrink-0 text-[#0F766E]" aria-hidden />
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+              <div>
+                <h3 className="flex items-center gap-2 font-sans text-lg font-semibold tracking-tight text-slate-900">
+                  <IconMapPin className="h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
+                  Location
+                </h3>
+                <div className="mt-3 overflow-hidden rounded-2xl ring-1 ring-stone-200/80 bg-stone-100">
+                  <iframe
+                    title={isVenue ? "Venue location" : "Service area"}
+                    className="h-[220px] w-full sm:h-[260px]"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://maps.google.com/maps?q=${mapQuery}&z=14&output=embed`}
+                  />
+                </div>
+                <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                  {primaryPlaceLabel || <span className="text-slate-400">Area not listed</span>}
+                </p>
+              </div>
+            </div>
+          </SectionContainer>
+
+          <SectionContainer
+            id="venue-section-venue-details"
+            title={
+              isVenue ? (
+                <span className="flex items-center gap-2">
+                  <IconLines className="h-6 w-6 shrink-0 text-[#0F766E]" aria-hidden />
+                  Venue Details
+                </span>
+              ) : (
+                "Highlights"
+              )
+            }
+          >
+            {isVenue ? (
+              <VenueDetailsRows venueDetails={venue.venueDetails} />
+            ) : (
+              <AmenityChips items={amenityItems} activeIndex={activeTag} onSelect={setActiveTag} />
+            )}
+          </SectionContainer>
+
+          <SectionContainer id="venue-section-photos" title="Photo gallery">
+            <VenueGallery
+              images={images}
+              galleryResponsive={galleryResponsive}
+              onImageClick={(src) => setLightbox(src)}
+            />
+          </SectionContainer>
+
+          <SectionContainer id="venue-section-pricing" title="Pricing breakdown">
+            <PricingCard priceRange={priceDisplay} bullets={pricingBullets} />
+          </SectionContainer>
+
+          <SectionContainer id="venue-section-reviews" title="Reviews">
+            <ReviewList reviews={reviewItems} />
+          </SectionContainer>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
+        {/* Similar */}
+        {similar?.length ? (
+          <section className="mt-14 border-t border-slate-100 pt-12">
+            <h2 className="font-sans text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+              {isVenue ? "Similar venues" : "Similar listings"}
+            </h2>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {similar.map((v) => (
+                <Link
+                  key={v.id}
+                  href={similarHref(v.id)}
+                  className="group overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition hover:shadow-md"
+                >
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+                    {v.profileImage ? (
+                      <ResponsiveVendorImage
+                        responsive={v.profileImageResponsive}
+                        src={v.profileImage}
+                        alt=""
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        sizes="(max-width: 1024px) 50vw, 240px"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-slate-400">No image</div>
+                    )}
+                    {similarUnavailable(v.id) ? (
+                      <div className="absolute inset-x-0 bottom-0 bg-amber-950/85 px-2 py-1.5 text-center text-[0.65rem] font-semibold uppercase tracking-wide text-white">
+                        Booked on this date
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-slate-900 line-clamp-2">{v.businessName}</h3>
+                    <p className="mt-1 text-xs text-slate-500">{v.place?.trim() || v.city?.trim() || "—"}</p>
+                    <p className="mt-2 text-sm font-semibold text-[#0F766E]">{v.priceRange?.trim() || "Ask for quote"}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
+
+      {lightbox ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightbox(null)}
+          aria-label="Close image"
+        >
+          <img src={lightbox} alt="" className="max-h-[90vh] max-w-full rounded-lg object-contain" />
+        </button>
+      ) : null}
+    </div>
+  );
+}

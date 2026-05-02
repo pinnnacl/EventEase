@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useWishlist } from "../../context/WishlistContext";
@@ -10,13 +11,13 @@ import {
   writeStoredGuestCount,
   writeStoredLocationLabel,
 } from "../../lib/siteSearchStorage";
+import { parseEventDateLabelToYmd } from "../../lib/eventDateYmd";
 import {
   readStoredEventDateLabel,
   writeStoredEventDateLabel,
 } from "../../lib/wishlistActions";
-
-/** Scroll threshold (px) — Airbnb-style handoff from hero → sticky bar */
-const SCROLL_COMPACT_PX = 100;
+import VenueListingCard from "../venues/VenueListingCard";
+import ServicePortraitCard from "../service/ServicePortraitCard";
 
 /** Gap between header bottom and floating action bar on home (px) */
 const BAR_TOP_GAP_PX = 12;
@@ -35,16 +36,22 @@ function SearchIcon({ className }) {
 }
 
 /**
- * @param {{ value: string; onChange: (v: string) => void; inputRef?: import("react").RefObject<HTMLInputElement | null> }} props
+ * @param {{
+ *  value: string;
+ *  onChange: (v: string) => void;
+ *  onSubmit: () => void;
+ *  loading?: boolean;
+ *  inputRef?: import("react").RefObject<HTMLInputElement | null>
+ * }} props
  */
-function AiSearchHeroBar({ value, onChange, inputRef }) {
+function AiSearchHeroBar({ value, onChange, onSubmit, loading = false, inputRef }) {
   return (
     <div className={`w-full origin-top transition-transform ${TRANSITION}`}>
       <div
-        className={`group relative w-full overflow-hidden rounded-full border border-gray-200 bg-white/80 shadow-md backdrop-blur-md transition ${TRANSITION} hover:shadow-lg focus-within:border-gray-300 focus-within:shadow-md`}
+        className={`group relative w-full overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-[0_10px_30px_-22px_rgba(20,43,60,0.25)] backdrop-blur-md transition ${TRANSITION} hover:shadow-[0_14px_36px_-22px_rgba(20,43,60,0.32)] focus-within:border-[#0F766E]/45 focus-within:shadow-[0_12px_34px_-22px_rgba(20,43,60,0.3)]`}
       >
-        <div className="flex items-center gap-2.5 px-4 py-3 sm:gap-3 sm:px-5 sm:py-3">
-          <span className="shrink-0 text-[#717171]" aria-hidden>
+        <div className="flex items-center gap-3 px-5 py-3.5 sm:gap-3.5 sm:px-6 sm:py-4">
+          <span className="shrink-0 text-slate-500" aria-hidden>
             <svg className="h-4 w-4 sm:h-[1.125rem] sm:w-[1.125rem]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 12l.7 2.1L8 15l-2.3.9L5 18l-.7-2.1L2 15l2.3-.9L5 12z" />
@@ -55,15 +62,23 @@ function AiSearchHeroBar({ value, onChange, inputRef }) {
             ref={inputRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onSubmit();
+              }
+            }}
             placeholder="Ask AI to plan your dream wedding..."
-            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium text-[#222222] outline-none placeholder:text-[#B0B0B0] focus:ring-0 sm:text-base"
+            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-500 focus:ring-0 sm:text-base"
           />
 
           <button
             type="button"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#134E4A] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_-4px_rgba(19,78,74,0.45)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#0f3f3c] hover:shadow-[0_6px_18px_-4px_rgba(19,78,74,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#134E4A]/40 focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.99] sm:px-5"
+            onClick={onSubmit}
+            disabled={loading}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_-14px_rgba(15,118,110,0.55)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#0E6A64] hover:shadow-[0_14px_28px_-14px_rgba(15,118,110,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40 focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.99]"
           >
-            <span>Curate</span>
+            <span>{loading ? "Curating..." : "Curate"}</span>
             <span aria-hidden className="text-white/90">
               ⚡
             </span>
@@ -71,6 +86,62 @@ function AiSearchHeroBar({ value, onChange, inputRef }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function aiResultHref(vendor) {
+  if (!vendor?.id) return "/venues";
+  const category = String(vendor.category || "").trim();
+  if (category === "Photographer") return `/photography/${vendor.id}`;
+  if (category === "Makeup") return `/makeup/${vendor.id}`;
+  if (category === "Venue") return `/venue/${vendor.id}`;
+  return `/venue/${vendor.id}`;
+}
+
+function AiVendorResultTile({ row, idx }) {
+  const vendor = row?.vendor;
+  if (!vendor?.id) {
+    const fallbackTitle = String(row?.mediaId || "AI match");
+    const fallbackImg = String(row?.imageUrl || "").trim();
+    return (
+      <article className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
+        <div className="aspect-[4/3] w-full bg-stone-100">
+          {fallbackImg ? <img src={fallbackImg} alt="" className="h-full w-full object-cover" /> : null}
+        </div>
+        <div className="p-3">
+          <p className="line-clamp-1 text-sm font-semibold text-slate-900">{fallbackTitle}</p>
+          <p className="mt-0.5 text-xs text-slate-500">Vendor</p>
+        </div>
+      </article>
+    );
+  }
+  const href = aiResultHref(vendor);
+  const category = String(vendor.category || "").trim().toLowerCase();
+  const cardVendor = {
+    ...vendor,
+    // Prefer canonical vendor profile image so tile matches listing pages.
+    profileImage: vendor.profileImage || row?.imageUrl || "",
+    aiDistanceKm: Number.isFinite(Number(row?.distanceKm)) ? Number(row.distanceKm) : null,
+    aiDistanceFrom: typeof row?.distanceFrom === "string" ? row.distanceFrom : "",
+  };
+
+  if (category === "venue") {
+    return (
+      <VenueListingCard
+        key={`${vendor.id}-${idx}`}
+        vendor={cardVendor}
+        href={href}
+        variant="grid"
+      />
+    );
+  }
+
+  return (
+    <ServicePortraitCard
+      key={`${vendor.id}-${idx}`}
+      vendor={cardVendor}
+      href={href}
+    />
   );
 }
 
@@ -108,25 +179,29 @@ function StickySegmentedSearch() {
     writeStoredGuestCount(guests.trim() || null);
     const city = locationLabelToCityParam(location);
     const path = router.pathname === "/photography" ? "/photography" : "/venues";
-    router.push({ pathname: path, query: city && city !== "Kerala" ? { city } : {} });
+    const ymd = parseEventDateLabelToYmd(eventDate.trim());
+    const query = {};
+    if (city && city !== "Kerala") query.city = city;
+    if (ymd) query.date = ymd;
+    router.push({ pathname: path, query });
   }, [eventDate, guests, location, router]);
 
   const segmentBase =
     "group/seg relative flex min-w-0 cursor-pointer flex-col justify-center px-3 py-1 text-left outline-none transition-colors duration-200 ease-out hover:bg-neutral-100/90 focus-within:bg-neutral-100/80 sm:px-4";
 
   const segmentFocus =
-    "focus-within:ring-2 focus-within:ring-[#134E4A]/15 focus-within:ring-offset-0 sm:focus-within:ring-inset";
+    "focus-within:ring-2 focus-within:ring-[#0F766E]/20 focus-within:ring-offset-0 sm:focus-within:ring-inset";
 
   const segmentDesktop = `h-11 sm:h-12 ${segmentBase} ${segmentFocus}`;
 
   const labelCls =
-    "text-[0.58rem] font-semibold uppercase leading-none tracking-[0.14em] text-[#717171]";
+    "text-[0.58rem] font-semibold uppercase leading-none tracking-[0.14em] text-slate-500";
 
   const inputCls =
-    "mt-0.5 w-full min-w-0 border-0 bg-transparent p-0 text-[0.8125rem] font-semibold leading-tight text-[#222222] outline-none ring-0 placeholder:font-normal placeholder:text-[#B0B0B0] focus:ring-0 sm:text-sm";
+    "mt-0.5 w-full min-w-0 border-0 bg-transparent p-0 text-[0.8125rem] font-semibold leading-tight text-slate-900 outline-none ring-0 placeholder:font-normal placeholder:text-slate-500 focus:ring-0 sm:text-sm";
 
   const searchButtonClass =
-    "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#134E4A] text-white shadow-[0_4px_12px_-4px_rgba(19,78,74,0.4)] transition duration-200 ease-out hover:scale-105 hover:bg-[#0f3f3c] hover:shadow-[0_6px_16px_-4px_rgba(19,78,74,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#134E4A]/35 focus-visible:ring-offset-2 active:scale-95 sm:h-8 sm:w-8";
+    "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0F766E] text-white shadow-[0_4px_12px_-4px_rgba(15,118,110,0.4)] transition duration-200 ease-out hover:scale-105 hover:bg-[#0E6A64] hover:shadow-[0_6px_16px_-4px_rgba(15,118,110,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/35 focus-visible:ring-offset-2 active:scale-95 sm:h-8 sm:w-8";
 
   return (
     <div
@@ -134,16 +209,16 @@ function StickySegmentedSearch() {
     >
       {/* Mobile: single-line search bar */}
       <div
-        className={`flex md:hidden ${TRANSITION} h-10 min-h-10 items-center overflow-hidden rounded-full border border-gray-200 bg-white/80 shadow-md backdrop-blur-md`}
+        className={`flex md:hidden ${TRANSITION} h-10 min-h-10 items-center overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md`}
         role="search"
       >
-        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-0 transition-colors hover:bg-neutral-100/90 focus-within:bg-neutral-100/80 focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#134E4A]/12">
-          <SearchIcon className="h-4 w-4 shrink-0 text-[#717171]" />
+        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-0 transition-colors hover:bg-neutral-100/90 focus-within:bg-neutral-100/80 focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#0F766E]/12">
+          <SearchIcon className="h-4 w-4 shrink-0 text-slate-500" />
           <input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Search"
-            className="min-w-0 flex-1 border-0 bg-transparent py-2 text-sm font-medium text-[#222222] outline-none placeholder:text-[#B0B0B0] focus:ring-0"
+            className="min-w-0 flex-1 border-0 bg-transparent py-2 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-500 focus:ring-0"
             autoComplete="off"
           />
         </label>
@@ -158,7 +233,7 @@ function StickySegmentedSearch() {
       {/* Desktop: segmented Airbnb-style bar */}
       <div
         role="search"
-        className={`hidden h-11 min-h-11 min-w-0 items-stretch overflow-hidden rounded-full border border-gray-200 bg-white/80 shadow-md backdrop-blur-md transition-shadow md:flex md:h-12 md:min-h-12 ${TRANSITION} hover:shadow-lg`}
+        className={`hidden h-11 min-h-11 min-w-0 items-stretch overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md transition-shadow md:flex md:h-12 md:min-h-12 ${TRANSITION} hover:shadow-lg`}
       >
         <div className="flex min-h-0 min-w-0 flex-1 items-stretch">
           <label className={`${segmentDesktop} min-w-0 flex-1 rounded-l-full`}>
@@ -217,9 +292,13 @@ export default function AiSearchExperience({ headerEl }) {
   const isWishlist = router.pathname === "/wishlist";
   const { count: wishlistCount } = useWishlist();
 
-  const [compact, setCompact] = useState(false);
   const [headerH, setHeaderH] = useState(0);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiResults, setAiResults] = useState([]);
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiSearched, setAiSearched] = useState(false);
   const aiInputRef = useRef(null);
 
   const handleSuggestionSelect = useCallback((text) => {
@@ -230,27 +309,37 @@ export default function AiSearchExperience({ headerEl }) {
     });
   }, []);
 
-  useEffect(() => {
-    if (!isHome) {
-      setCompact(false);
-      return;
-    }
-
-    let raf = 0;
-    function onScroll() {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        setCompact(window.scrollY >= SCROLL_COMPACT_PX);
+  const runAiSearch = useCallback(async () => {
+    const q = aiPrompt.trim();
+    if (!q || aiLoading) return;
+    setAiLoading(true);
+    setAiError("");
+    setAiAnswer("");
+    setAiSearched(true);
+    try {
+      const res = await fetch("/api/ai/search/text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ query: q, limit: 6 }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        setAiResults([]);
+        setAiAnswer("");
+        setAiError(data?.error || "Could not run AI search right now.");
+        return;
+      }
+      setAiResults(Array.isArray(data.results) ? data.results : []);
+      setAiAnswer(typeof data.answer === "string" ? data.answer : "");
+    } catch {
+      setAiResults([]);
+      setAiAnswer("");
+      setAiError("Network error while running AI search.");
+    } finally {
+      setAiLoading(false);
     }
-
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, [isHome]);
+  }, [aiPrompt, aiLoading]);
 
   const barTopGap = isHome ? BAR_TOP_GAP_PX : BAR_TOP_GAP_NON_HOME_PX;
   const stickyBarTopPx = headerH ? headerH + barTopGap : barTopGap;
@@ -275,7 +364,7 @@ export default function AiSearchExperience({ headerEl }) {
 
     return (
       <section
-        className="sticky z-[51] w-full border-0 bg-transparent shadow-none"
+        className="sticky z-40 w-full border-0 bg-transparent shadow-none"
         style={{ top: stickyBarTopPx }}
         data-ai-search-sticky={isWishlist ? "wishlist-actions" : "segmented"}
       >
@@ -289,42 +378,67 @@ export default function AiSearchExperience({ headerEl }) {
   return (
     <>
       <section className="w-full border-0 bg-transparent shadow-none">
-        <div
-          className={`grid transition-[grid-template-rows] ${TRANSITION} ${
-            compact ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
-          }`}
-        >
+        <div className={`grid transition-[grid-template-rows] ${TRANSITION} grid-rows-[1fr]`}>
           <div className="min-h-0 overflow-hidden">
-            <div
-              className={`px-container-fluid transition ${TRANSITION} ${
-                compact ? "translate-y-1 py-0 opacity-0" : "translate-y-0 pt-10 pb-5 opacity-100 sm:pt-14 sm:pb-6"
-              }`}
-            >
+            <div className={`px-container-fluid transition ${TRANSITION} translate-y-0 pt-16 pb-10 opacity-100 sm:pt-20 sm:pb-12`}>
               <div
-                className={`mx-auto w-full max-w-4xl transition ${TRANSITION} will-change-transform ${
-                  compact ? "pointer-events-none scale-95" : "scale-100"
-                }`}
+                className={`mx-auto w-full max-w-4xl transition ${TRANSITION} will-change-transform scale-100`}
               >
-                <AiSearchHeroBar value={aiPrompt} onChange={setAiPrompt} inputRef={aiInputRef} />
-                {!compact ? <SearchSuggestions onSelect={handleSuggestionSelect} /> : null}
+                <div className="mx-auto mb-6 max-w-3xl text-center sm:mb-7">
+                  <h1 className="font-sans text-3xl font-semibold leading-tight tracking-tight text-[#0F172A] sm:text-4xl">
+                    Plan your dream wedding with AI
+                  </h1>
+                  <p className="mx-auto mt-2.5 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
+                    Tell us your style, date, and budget — we’ll curate venues and services that fit.
+                  </p>
+                </div>
+                <div>
+                  <AiSearchHeroBar
+                    value={aiPrompt}
+                    onChange={setAiPrompt}
+                    onSubmit={runAiSearch}
+                    loading={aiLoading}
+                    inputRef={aiInputRef}
+                  />
+                </div>
+                <SearchSuggestions onSelect={handleSuggestionSelect} />
+                {aiSearched ? (
+                  <div className="mt-5">
+                    {aiError ? (
+                      <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">
+                        {aiError}
+                      </p>
+                    ) : aiLoading ? (
+                      <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600">
+                        Curating results with AI...
+                      </p>
+                    ) : aiResults.length === 0 ? (
+                      <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600">
+                        No matches yet. Try a different style prompt.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {aiAnswer ? (
+                          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
+                            {aiAnswer}
+                          </p>
+                        ) : null}
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {aiResults.map((row, idx) => (
+                            <AiVendorResultTile key={`${row?.vendorId || row?.mediaId || "m"}-${idx}`} row={row} idx={idx} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <div
-        className={`fixed left-0 right-0 z-[52] border-0 bg-transparent px-container-fluid shadow-none will-change-transform ${TRANSITION} ${
-          compact ? "pointer-events-none translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-3 scale-[0.97] opacity-0"
-        }`}
-        style={{ top: stickyBarTopPx }}
-        aria-hidden={!compact}
-        data-ai-search-sticky={compact ? "true" : "false"}
-      >
-        <div className={`mx-auto w-full max-w-4xl ${compact ? "pointer-events-auto" : "pointer-events-none"}`}>
-          <StickySegmentedSearch />
-        </div>
-      </div>
+      {/* Home page: segmented sticky action bar removed by request. */}
     </>
   );
 }

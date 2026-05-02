@@ -1,27 +1,30 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useWishlist } from "../../context/WishlistContext";
-import { photographers } from "../../data/photographers";
-import { venues } from "../../data/venues";
+import VenueGridSkeleton from "../venues/VenueGridSkeleton";
+import { useServiceVendorCatalog } from "../../hooks/useServiceVendorCatalog";
+import { useVenueCatalog } from "../../hooks/useVenueCatalog";
 import { buildWishlistCategories } from "./buildWishlistCategories";
 import WishlistSection from "./WishlistSection";
 import WishlistTabs from "./WishlistTabs";
 
 export default function WishlistPage() {
   const { wishlist, toggle, togglePhotography, removeCatering, removeDecoration, count } = useWishlist();
+  const { venues: venueCatalog, loading: venueCatalogLoading } = useVenueCatalog();
+  const { serviceVendors, loading: serviceCatalogLoading } = useServiceVendorCatalog();
 
   const categories = useMemo(
     () =>
       buildWishlistCategories({
         wishlist,
-        venues,
-        photographers,
+        venues: venueCatalog,
+        serviceVendors,
         toggle,
         togglePhotography,
         removeCatering,
         removeDecoration,
       }),
-    [wishlist, toggle, togglePhotography, removeCatering, removeDecoration],
+    [wishlist, venueCatalog, serviceVendors, toggle, togglePhotography, removeCatering, removeDecoration],
   );
 
   const [activeKey, setActiveKey] = useState(null);
@@ -35,6 +38,13 @@ export default function WishlistPage() {
   const activeCategory = categories.find((c) => c.key === effectiveTabKey) ?? null;
 
   const hasAnything = count > 0;
+  const showVenueSkeleton =
+    hasAnything && wishlist.venues.length > 0 && venueCatalogLoading && activeCategory?.key === "venues";
+  const showServiceSkeleton =
+    hasAnything &&
+    wishlist.photography.length > 0 &&
+    serviceCatalogLoading &&
+    activeCategory?.key === "photography";
 
   return (
     <main className="w-full max-w-none pb-12 sm:pb-16 lg:pb-20">
@@ -72,15 +82,22 @@ export default function WishlistPage() {
                   >
                     Browse photography
                   </Link>
+                  <Link
+                    href="/makeup"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border-2 border-brand-200 bg-white px-6 py-3 text-sm font-semibold text-brand-900 transition hover:bg-brand-50"
+                  >
+                    Browse makeup
+                  </Link>
                 </div>
               </div>
             </div>
+          ) : showVenueSkeleton || showServiceSkeleton ? (
+            <VenueGridSkeleton count={4} />
           ) : (
             <WishlistSection category={activeCategory} />
           )}
         </div>
       </div>
-
     </main>
   );
 }

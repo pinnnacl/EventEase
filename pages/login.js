@@ -38,7 +38,7 @@ export default function LoginPage() {
   return (
     <>
       <Head>
-        <title>Sign in | EventEase Kerala</title>
+        <title>Sign in | THAALI</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
           <div className="w-full max-w-md rounded-2xl border border-[#e8decc] bg-white p-8 shadow-card">
             <h1 className="text-2xl font-bold text-wedding-ink">Sign in</h1>
             <p className="mt-2 text-sm text-slate-600">
-              Use your EventEase account to continue planning.
+              Use your THAALI account to continue planning.
             </p>
 
             <form className="mt-8 space-y-5" onSubmit={handleSubmit}>

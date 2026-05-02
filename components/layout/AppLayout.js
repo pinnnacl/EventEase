@@ -1,39 +1,44 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWishlist } from "../../context/WishlistContext";
 import HeaderHeart from "../HeaderHeart";
 import AiSearchExperience from "./AiSearchExperience";
 import { CATEGORY_NAV_ITEMS, isCategoryActive } from "./categoryNavConfig";
 
-/** Reference palette: deep forest #002B24, cream #E8E4D1 on dark — inverted for white header */
-function LogoThali({ className = "h-8 w-8 shrink-0 text-[#002B24]" }) {
+/** Inline EVENTiZO logo mark + wordmark */
+function LogoEventizo({ className = "h-10 w-auto shrink-0 text-[#0B2D74]" }) {
   return (
-    <svg className={className} viewBox="0 0 40 40" fill="none" aria-hidden>
-      <circle cx="20" cy="20" r="17.25" stroke="currentColor" strokeWidth="1.75" />
-      <circle cx="26.75" cy="13.25" r="2.35" fill="currentColor" stroke="none" />
+    <svg className={className} viewBox="0 0 360 64" fill="none" aria-hidden>
+      <path d="M34 54a22 22 0 1 1 24 0" fill="none" stroke="#0B2D74" strokeWidth="6" strokeLinecap="round" />
+      <path d="M44 54V26h4v28z" fill="#0B2D74" />
+      <path d="M48 54V26h4v28z" fill="#25A9FF" />
       <path
-        d="M12.25 12.5c1.65-.35 3.35 1.15 4.1 3.35.45 1.35.35 2.85-.35 4.1-1.9-1.45-3.05-4.05-3.75-7.45z"
-        fill="currentColor"
+        d="M46 8l3.2 6.7L56 16l-4.8 5.1L52.2 28 46 24.5 39.8 28l1-6.9L36 16l6.8-1.3z"
+        fill="#F9B233"
       />
-      <path
-        d="M13.5 18.5c.85 2.35 2.35 4.15 4.25 5.1"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M7.25 25.75c4.85-3.85 13.9-3.85 25.5 0"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M9.25 30.25c4.35-2.65 11.15-2.65 21.5 0"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
+      <text
+        x="84"
+        y="46"
+        fill="#0B2D74"
+        fontSize="42"
+        fontWeight="800"
+        letterSpacing="1"
+        fontFamily="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
+      >
+        EVENT
+      </text>
+      <text
+        x="232"
+        y="46"
+        fill="#0B2D74"
+        fontSize="42"
+        fontWeight="500"
+        letterSpacing="0.5"
+        fontFamily="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
+      >
+        iZO
+      </text>
     </svg>
   );
 }
@@ -44,6 +49,8 @@ export default function AppLayout({ children }) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [checked, setChecked] = useState(false);
   const [headerEl, setHeaderEl] = useState(null);
+  const [vendorMenuOpen, setVendorMenuOpen] = useState(false);
+  const vendorMenuRef = useRef(null);
 
   const refreshSession = useCallback(async () => {
     try {
@@ -69,12 +76,55 @@ export default function AppLayout({ children }) {
     return () => router.events.off("routeChangeComplete", onRoute);
   }, [router.events, refreshSession]);
 
+  useEffect(() => {
+    if (!vendorMenuOpen) return;
+
+    function onKeyDown(e) {
+      if (e.key === "Escape") setVendorMenuOpen(false);
+    }
+
+    function onPointerDown(e) {
+      const el = vendorMenuRef.current;
+      if (!el) return;
+      if (!el.contains(e.target)) setVendorMenuOpen(false);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [vendorMenuOpen]);
+
+  useEffect(() => {
+    function closeOnRouteStart() {
+      setVendorMenuOpen(false);
+    }
+    router.events.on("routeChangeStart", closeOnRouteStart);
+    return () => router.events.off("routeChangeStart", closeOnRouteStart);
+  }, [router.events]);
+
   const pathname = router.pathname;
+  const isHome = pathname === "/";
+  const isVendorRoute = pathname.startsWith("/vendor");
+  const isAuthRoute = pathname.startsWith("/auth");
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isVenueDetailRoute = pathname.startsWith("/venue");
+  const isPhotographyDetailRoute = pathname === "/photography/demo" || pathname === "/photography/[id]";
 
   async function handleLogout() {
     await fetch("/api/logout", { method: "POST" });
     setLoggedIn(false);
     await router.push("/");
+  }
+
+  function MenuIcon({ className = "h-5 w-5" }) {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    );
   }
 
   const navList = (
@@ -85,8 +135,8 @@ export default function AppLayout({ children }) {
           <li key={key} className="shrink-0">
             <Link
               href={href}
-              className={`group relative flex flex-col items-center justify-center gap-1 rounded-lg px-1.5 py-1 text-stone-500 transition duration-200 ease-in-out hover:-translate-y-0.5 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
-                active ? "text-brand-900" : ""
+              className={`group relative flex flex-col items-center justify-center gap-1 rounded-lg px-1.5 py-1 text-slate-600 transition duration-200 ease-in-out hover:-translate-y-0.5 hover:text-[#0F766E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
+                active ? "text-[#0F766E]" : ""
               }`}
             >
               <span className="relative grid place-items-center">
@@ -98,7 +148,7 @@ export default function AppLayout({ children }) {
                   className={`relative h-7 w-7 select-none object-contain transition duration-200 sm:h-8 sm:w-8 ${
                     active
                       ? "opacity-100 grayscale-0"
-                      : "opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0"
+                      : "opacity-75 grayscale group-hover:opacity-100 group-hover:grayscale-0"
                   }`}
                 />
               </span>
@@ -121,18 +171,18 @@ export default function AppLayout({ children }) {
 
   return (
     <div className="flex min-h-0 w-full max-w-none flex-1 flex-col bg-background">
-      <header ref={setHeaderEl} className="sticky top-0 z-50 w-full max-w-none p-0 m-0">
+      <header
+        ref={setHeaderEl}
+        className="sticky top-0 z-[60] isolate w-full max-w-none p-0 m-0"
+      >
         {/* Clean sticky header: top bar + centered category nav */}
         <div className="w-full max-w-none border-b border-stone-200/50 bg-background">
           <div className="relative flex items-center gap-2.5 px-container-fluid pt-2 pb-1 sm:pt-2.5 sm:pb-1.5">
             <Link
               href="/"
-              className="group flex min-w-0 items-center gap-2.5 rounded-lg outline-none ring-brand-500/30 transition duration-200 hover:bg-stone-100/80 focus-visible:ring-2 focus-visible:ring-offset-2"
+              className="group flex min-w-0 items-center rounded-lg outline-none ring-brand-500/30 transition duration-200 hover:bg-stone-100/80 focus-visible:ring-2 focus-visible:ring-offset-2"
             >
-              <LogoThali className="h-7 w-7 shrink-0 transition-colors duration-200 group-hover:text-[#0b5e58] sm:h-8 sm:w-8" />
-              <span className="truncate font-sans text-[0.8125rem] font-bold uppercase tracking-[0.18em] text-[#002B24] transition-colors duration-200 group-hover:text-[#0b5e58] sm:text-[0.9rem]">
-                THALI
-              </span>
+              <LogoEventizo className="h-10 w-auto shrink-0 text-[#0B2D74] transition-opacity duration-200 group-hover:opacity-90 sm:h-11" />
             </Link>
 
             {/* Desktop: nav centered in header row */}
@@ -149,7 +199,7 @@ export default function AppLayout({ children }) {
               <Link
                 href="/wishlist"
                 aria-label={wishlistCount > 0 ? `Wishlist, ${wishlistCount} saved items` : "Wishlist"}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-brand-700 shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
               >
                 <HeaderHeart active={wishlistCount > 0} className="h-5 w-5" />
                 {wishlistCount > 0 ? (
@@ -159,22 +209,68 @@ export default function AppLayout({ children }) {
                 ) : null}
               </Link>
 
-              {checked && loggedIn ? (
+              <div ref={vendorMenuRef} className="relative">
                 <button
                   type="button"
-                  onClick={handleLogout}
-                  className="rounded-full border border-stone-200/80 bg-white/70 px-4 py-1.5 text-[0.8125rem] font-semibold text-brand-950 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                  aria-label={vendorMenuOpen ? "Close vendor menu" : "Open vendor menu"}
+                  aria-haspopup="menu"
+                  aria-expanded={vendorMenuOpen}
+                  onClick={() => setVendorMenuOpen((v) => !v)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
                 >
-                  Log out
+                  <MenuIcon />
                 </button>
-              ) : (
-                <Link
-                  href="/login"
-                  className="inline-flex items-center justify-center rounded-full bg-brand-600 px-4 py-1.5 text-[0.8125rem] font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+
+                <div
+                  role="menu"
+                  aria-label="Vendor menu"
+                  className={`absolute right-0 z-[70] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-stone-200/70 bg-white/95 p-1.5 shadow-[0_14px_44px_-26px_rgba(20,43,60,0.36)] backdrop-blur-md transition duration-200 ${
+                    vendorMenuOpen ? "pointer-events-auto translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
+                  }`}
                 >
-                  Login
-                </Link>
-              )}
+                  {checked && loggedIn ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setVendorMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                    >
+                      Log out
+                    </button>
+                  ) : (
+                    <Link
+                      href="/login"
+                      role="menuitem"
+                      onClick={() => setVendorMenuOpen(false)}
+                      className="block w-full rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                    >
+                      Login
+                    </Link>
+                  )}
+
+                  <div className="my-1 h-px w-full bg-stone-200/70" aria-hidden />
+
+                  <Link
+                    href="/vendor/login"
+                    role="menuitem"
+                    onClick={() => setVendorMenuOpen(false)}
+                    className="block w-full rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                  >
+                    Vendor Login
+                  </Link>
+                  <Link
+                    href="/vendor/signup"
+                    role="menuitem"
+                    onClick={() => setVendorMenuOpen(false)}
+                    className="block w-full rounded-lg px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                  >
+                    Help / Learn more
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -189,9 +285,13 @@ export default function AppLayout({ children }) {
         </div>
       </header>
 
-      <AiSearchExperience headerEl={headerEl} />
+      {isVendorRoute || isAuthRoute || isAdminRoute || isVenueDetailRoute || isPhotographyDetailRoute ? null : (
+        <AiSearchExperience headerEl={headerEl} />
+      )}
 
-      <div className="w-full min-w-0 flex-1 flex flex-col">{children}</div>
+      <div className={`w-full min-w-0 flex-1 flex flex-col ${isHome ? "pt-10 sm:pt-12 lg:pt-16" : ""}`}>
+        {children}
+      </div>
     </div>
   );
 }

@@ -6,8 +6,8 @@ export default function WishlistRoute() {
   return (
     <>
       <Head>
-        <title>Your wishlist | EventEase Kerala</title>
-        <meta name="description" content="Venues, photography, and services you have saved on EventEase Kerala." />
+        <title>Your wishlist | THAALI</title>
+        <meta name="description" content="Venues, photography, and services you have saved on THAALI." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

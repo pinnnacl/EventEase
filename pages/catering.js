@@ -5,7 +5,7 @@ export default function CateringPage() {
   return (
     <>
       <Head>
-        <title>Catering | EventEase Kerala</title>
+        <title>Catering | THAALI</title>
         <meta
           name="description"
           content="Curated wedding catering across Kerala — menus, tastings, and banquet-ready service."

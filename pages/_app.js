@@ -1,6 +1,7 @@
 import { Inter, Playfair_Display } from "next/font/google";
 import "../styles/globals.css";
 import { WishlistProvider } from "../context/WishlistContext";
+import SupabaseRecoveryRedirect from "../components/auth/SupabaseRecoveryRedirect";
 import AppLayout from "../components/layout/AppLayout";
 
 const inter = Inter({
@@ -16,12 +17,14 @@ const playfair = Playfair_Display({
 });
 
 export default function App({ Component, pageProps }) {
+  const inner = <Component {...pageProps} />;
+  const hideAppLayout = Component.hideAppLayout === true;
+
   return (
     <WishlistProvider>
+      <SupabaseRecoveryRedirect />
       <div className={`page-wrapper bg-background ${inter.variable} ${playfair.variable} font-sans`}>
-        <AppLayout>
-          <Component {...pageProps} />
-        </AppLayout>
+        {hideAppLayout ? inner : <AppLayout>{inner}</AppLayout>}
       </div>
     </WishlistProvider>
   );

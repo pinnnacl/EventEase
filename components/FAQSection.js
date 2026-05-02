@@ -3,7 +3,7 @@ import SectionTitle from "./SectionTitle";
 const faqs = [
   {
     q: "How do I find the best vendors in Kerala?",
-    a: "Use EventEase filters to compare vendor ratings, pricing, and availability quickly."
+    a: "Use THAALI filters to compare vendor ratings, pricing, and availability quickly."
   },
   {
     q: "Can I request custom quotes?",
@@ -21,7 +21,7 @@ export default function FAQSection() {
       <div className="container-default w-full max-w-none">
         <SectionTitle
           title="FAQ Section"
-          description="Common questions and answers about using EventEase Kerala for event planning."
+          description="Common questions and answers about using THAALI for event planning."
         />
         <div className="grid w-full gap-4">
           {faqs.map((faq) => (

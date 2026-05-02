@@ -18,11 +18,6 @@ module.exports = {
         content: "80rem",
         "content-wide": "87.5rem",
       },
-      fontFamily: {
-        sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
-        arial: ["Arial", "Helvetica Neue", "Helvetica", "sans-serif"],
-      },
       colors: {
         /** Single app canvas — white; use bg-background / bg-canvas sitewide */
         background: "#ffffff",
@@ -43,6 +38,20 @@ module.exports = {
           softgold: "#e7c86e",
           ink: "#22303b",
         },
+        /** Velvet & Gilded — makeup artist demo */
+        velvet: {
+          ivory: "#FAF9F6",
+          gold: "#D4A373",
+          rose: "#8C4B55",
+          ink: "#3d2a2c",
+        },
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "serif"],
+        arial: ["Arial", "Helvetica Neue", "Helvetica", "sans-serif"],
+        "makeup-sans": ["var(--font-makeup-body)", "Manrope", "system-ui", "sans-serif"],
+        "makeup-serif": ["var(--font-makeup-display)", "Noto Serif", "Georgia", "serif"],
       },
       boxShadow: {
         premium: "0 12px 36px -16px rgba(20, 43, 60, 0.28)",

@@ -30,39 +30,43 @@ export default function HowItWorksSection() {
   return (
     <Section
       id="how-it-works"
-      className="-mt-6 !pt-5 !pb-[clamp(40px,6vw,120px)] sm:-mt-8 sm:!pt-6"
+      className="!pt-5 !pb-[clamp(40px,6vw,120px)] sm:!pt-6"
     >
-      <div className="mb-12 w-full text-center sm:mb-16">
-        <h2 className="text-fluid-section-title font-bold tracking-tight text-[#0f766e]">
-          How it works
-        </h2>
-      </div>
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="mb-10 w-full text-center sm:mb-12">
+          <h2 className="text-fluid-section-title font-bold tracking-tight text-[#0f766e]">
+            How it works
+          </h2>
+        </div>
 
-      <div className="grid gap-5 sm:gap-6 md:grid-cols-3">
-        {steps.map((step) => {
-          const Graphic = step.Illustration;
-          return (
-            <article
-              key={step.title}
-              className="group flex flex-col overflow-hidden rounded-xl border border-stone-200/70 bg-white shadow-md transition duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <div className="flex flex-1 flex-col px-4 pb-3 pt-5 sm:px-5 sm:pt-6">
-                <h3 className="text-base font-bold leading-snug text-[#0f766e] sm:text-lg">
-                  {step.title}
-                </h3>
-                <p className="mt-2 flex-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
-                  {step.description}
-                </p>
-              </div>
-
-              <div className="group/illustration relative mt-auto min-h-[120px] flex-1 overflow-hidden bg-white px-4 pb-4 pt-2 sm:min-h-[140px] sm:px-5 sm:pb-4">
-                <div className="flex h-full min-h-[100px] items-center justify-center transition duration-300 ease-out group-hover/illustration:scale-[1.02]">
-                  <Graphic />
+        <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
+          {steps.map((step) => {
+            const Graphic = step.Illustration;
+            return (
+              <article
+                key={step.title}
+                className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.06),0_14px_36px_-28px_rgba(20,43,60,0.28)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_1px_2px_rgba(15,23,42,0.08),0_18px_44px_-28px_rgba(20,43,60,0.34)]"
+              >
+                <div className="flex flex-1 flex-col p-6 sm:p-8">
+                  <h3 className="text-[0.95rem] font-bold leading-snug text-[#0f766e] sm:text-base">
+                    {step.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-600">
+                    {step.description}
+                  </p>
                 </div>
-              </div>
-            </article>
-          );
-        })}
+
+                <div className="mt-auto border-t border-stone-200/70 bg-stone-50/60 px-6 py-6 sm:px-8 sm:py-7">
+                  <div className="flex items-center justify-center transition duration-300 ease-out group-hover:scale-[1.015]">
+                    <div className="w-full max-w-[220px]">
+                      <Graphic />
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </div>
     </Section>
   );
