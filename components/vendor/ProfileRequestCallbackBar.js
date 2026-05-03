@@ -65,10 +65,13 @@ export default function ProfileRequestCallbackBar({
     [vendorId, vendorName, category, demo],
   );
 
-  const onRequest = useCallback(() => {
+  const onRequest = useCallback(async () => {
     if (demo || !vendorId) return;
     setNotice(null);
-    void ensureCallbackAuth((callbackPass) => sendWithPass(callbackPass));
+    const r = await ensureCallbackAuth((callbackPass) => sendWithPass(callbackPass));
+    if (r && r.ok === false && "error" in r && r.error) {
+      setNotice({ type: "error", text: r.error });
+    }
   }, [demo, vendorId, ensureCallbackAuth, sendWithPass]);
 
   const bar =

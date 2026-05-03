@@ -1,10 +1,23 @@
 "use client";
 
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { formatOtpDestinationLine, isTenDigitIndiaMobile } from "../../lib/auth/customerPhoneUi";
+import { formatOtpPhoneSubtitle, isTenDigitIndiaMobile } from "../../lib/auth/customerPhoneUi";
+import { getCallbackSmsFirebaseAuth } from "../../lib/auth/callbackSmsFirebase";
+import { normalizeWhatsAppRecipientDigits } from "../../lib/whatsappPhone";
 import Button from "../Button";
 import SixDigitOtpInput from "./SixDigitOtpInput";
+
+const RECAPTCHA_CONTAINER_ID = "ee-customer-phone-recaptcha";
+
+function mapFirebasePhoneError(err) {
+  const code = String(err?.code || "");
+  if (code === "auth/too-many-requests") return "Too many attempts. Wait a few minutes and try again.";
+  if (code === "auth/invalid-verification-code") return "Invalid OTP. Check the code and try again.";
+  if (code === "auth/code-expired") return "OTP expired. Request a new code.";
+  return String(err?.message || "SMS verification failed.");
+}
 
 /**
  * @param {{
@@ -15,27 +28,44 @@ import SixDigitOtpInput from "./SixDigitOtpInput";
  */
 export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }) {
   const nameInputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
+  const confirmationRef = useRef(null);
+  const verifierRef = useRef(null);
+
   const [step, setStep] = useState("form");
   const [name, setName] = useState("");
-  const [location, setLocation] = useState("");
   const [phone10, setPhone10] = useState("");
   const [otp, setOtp] = useState("");
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
 
+  const clearVerifier = useCallback(() => {
+    const v = verifierRef.current;
+    if (v && typeof v.clear === "function") {
+      try {
+        v.clear();
+      } catch {
+        /* ignore */
+      }
+    }
+    verifierRef.current = null;
+    const el = document.getElementById(RECAPTCHA_CONTAINER_ID);
+    if (el) el.innerHTML = "";
+  }, []);
+
   useEffect(() => {
     if (!open) {
       setStep("form");
       setName("");
-      setLocation("");
       setPhone10("");
       setOtp("");
       setError("");
       setSending(false);
       setVerifying(false);
+      confirmationRef.current = null;
+      clearVerifier();
     }
-  }, [open]);
+  }, [open, clearVerifier]);
 
   useEffect(() => {
     if (!open || step !== "form") return;
@@ -57,7 +87,32 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
     return () => document.removeEventListener("keydown", onKeyDown, true);
   }, [open, onClose]);
 
-  const otpDestinationLine = formatOtpDestinationLine(phone10);
+  const ensureVerifier = useCallback(async () => {
+    clearVerifier();
+    const container = document.getElementById(RECAPTCHA_CONTAINER_ID);
+    if (!container) throw new Error("reCAPTCHA mount missing");
+    container.innerHTML = "";
+    const mountEl = document.createElement("div");
+    mountEl.id = `ee-cb-recaptcha-${Date.now()}`;
+    container.appendChild(mountEl);
+    const auth = getCallbackSmsFirebaseAuth();
+    if (process.env.NEXT_PUBLIC_FIREBASE_OTP_TEST_MODE === "true") {
+      auth.settings.appVerificationDisabledForTesting = true;
+    }
+    const verifier = new RecaptchaVerifier(auth, mountEl, {
+      size: "invisible",
+      callback: () => {},
+      "error-callback": () => {
+        clearVerifier();
+        setError("Captcha failed. Try again.");
+      },
+    });
+    await verifier.render();
+    verifierRef.current = verifier;
+    return verifier;
+  }, [clearVerifier]);
+
+  const otpPhoneLine = formatOtpPhoneSubtitle(phone10);
 
   const onPhoneInput = useCallback((e) => {
     const next = e.target.value.replace(/\D/g, "").slice(0, 10);
@@ -78,31 +133,29 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
       setError("Enter a valid 10-digit mobile number.");
       return;
     }
+    const digits = normalizeWhatsAppRecipientDigits(phone10);
+    if (!digits) {
+      setError("Enter a valid 10-digit mobile number.");
+      return;
+    }
+    const e164 = `+${digits}`;
+
     setSending(true);
     try {
-      const res = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          name: name.trim(),
-          location: location.trim() || undefined,
-          phone_number: phone10,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) {
-        setError(data.error || "Could not send OTP. Try again.");
-        return;
-      }
+      const verifier = await ensureVerifier();
+      const auth = getCallbackSmsFirebaseAuth();
+      const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
+      confirmationRef.current = confirmation;
       setOtp("");
       setStep("otp");
-    } catch {
-      setError("Network error. Try again.");
+      clearVerifier();
+    } catch (err) {
+      clearVerifier();
+      setError(mapFirebasePhoneError(err));
     } finally {
       setSending(false);
     }
-  }, [name, location, phone10]);
+  }, [name, phone10, ensureVerifier, clearVerifier]);
 
   const verify = useCallback(async () => {
     setError("");
@@ -111,36 +164,43 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
       setError("Enter all 6 digits.");
       return;
     }
+    const conf = confirmationRef.current;
+    if (!conf) {
+      setError("Request a code first.");
+      return;
+    }
     setVerifying(true);
     try {
-      const res = await fetch("/api/auth/verify-otp", {
+      const cred = await conf.confirm(code);
+      const idToken = await cred.user.getIdToken(true);
+      const res = await fetch("/api/auth/complete-firebase-phone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
         body: JSON.stringify({
-          phone_number: phone10,
-          otp: code,
+          idToken,
+          name: name.trim(),
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
-        setError(data.error || "Verification failed.");
+        setError(data.error || "Could not complete sign-in.");
         return;
       }
       await onAuthenticated({ user: data.user, callbackPass: String(data.callbackPass || "") });
       onClose();
-    } catch {
-      setError("Network error. Try again.");
+    } catch (err) {
+      setError(mapFirebasePhoneError(err));
     } finally {
       setVerifying(false);
     }
-  }, [otp, phone10, onAuthenticated, onClose]);
+  }, [otp, name, onAuthenticated, onClose]);
 
   if (!open) return null;
 
   return (
     <div
-      data-ee-modal="customer-sms-login"
+      data-ee-modal="customer-firebase-phone"
       className="fixed inset-0 z-[130] flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
@@ -148,7 +208,7 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-md min-h-[22rem] overflow-y-auto rounded-2xl border border-stone-200/90 bg-white p-6 shadow-[0_24px_64px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 ease-out sm:min-h-[24rem]"
+        className="max-h-[90vh] w-full max-w-md min-h-[20rem] overflow-y-auto rounded-2xl border border-stone-200/90 bg-white px-6 pt-5 pb-4 shadow-[0_24px_64px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 ease-out"
         onClick={(e) => e.stopPropagation()}
       >
         {step === "form" ? (
@@ -156,7 +216,9 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
             <h2 id="auth-modal-title" className="text-xl font-bold tracking-tight text-stone-900">
               Login or Signup to Continue
             </h2>
-            <p className="mt-1.5 text-sm text-stone-600">We’ll text you a one-time code (SMS only).</p>
+            <p className="mt-1.5 text-sm text-stone-600">
+              We’ll text you a one-time code (SMS via Firebase — same project as your existing Firebase setup).
+            </p>
 
             <label className="mt-5 block text-sm font-semibold text-stone-800" htmlFor="auth-name">
               Full name
@@ -169,18 +231,6 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
               className="mt-1.5 w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none ring-brand-500/25 focus:border-brand-500 focus:ring-2"
               placeholder="Your full name"
               autoComplete="name"
-            />
-
-            <label className="mt-4 block text-sm font-semibold text-stone-800" htmlFor="auth-location">
-              Location <span className="font-normal text-stone-500">(optional)</span>
-            </label>
-            <input
-              id="auth-location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value.slice(0, 200))}
-              className="mt-1.5 w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none ring-brand-500/25 focus:border-brand-500 focus:ring-2"
-              placeholder="City or area"
-              autoComplete="address-level2"
             />
 
             <label className="mt-4 block text-sm font-semibold text-stone-800" htmlFor="auth-phone">
@@ -202,7 +252,9 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
               />
             </div>
 
-            <p className="mt-3 text-xs leading-relaxed text-stone-500">
+            <div id={RECAPTCHA_CONTAINER_ID} className="mt-3 min-h-[1px]" />
+
+            <p className="mt-2 text-xs leading-relaxed text-stone-500">
               By proceeding, you agree to our{" "}
               <Link href="/privacy" className="font-semibold text-brand-700 underline-offset-2 hover:underline">
                 Privacy Policy
@@ -214,9 +266,9 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
               .
             </p>
 
-            {error ? <p className="mt-3 text-sm font-medium text-rose-700">{error}</p> : null}
+            {error ? <p className="mt-2 text-sm font-medium text-rose-700">{error}</p> : null}
 
-            <div className="mt-6 flex min-h-[2.75rem] flex-wrap items-center justify-end gap-2">
+            <div className="mt-4 flex min-h-[2.5rem] flex-wrap items-center justify-center gap-2">
               {tenDigitsEntered ? (
                 <Button
                   type="button"
@@ -229,9 +281,9 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
               ) : null}
             </div>
             {tenDigitsEntered && !phoneValid ? (
-              <p className="mt-2 text-xs text-stone-500">Use a valid Indian mobile (starts with 6–9).</p>
+              <p className="mt-1.5 text-center text-xs text-stone-500">Use a valid Indian mobile (starts with 6–9).</p>
             ) : tenDigitsEntered && phoneValid && !name.trim() ? (
-              <p className="mt-2 text-xs text-stone-500">Enter your full name to enable Get OTP.</p>
+              <p className="mt-1.5 text-center text-xs text-stone-500">Enter your full name to enable Get OTP.</p>
             ) : null}
           </div>
         ) : (
@@ -248,7 +300,7 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
             </h2>
             <p className="mt-2 text-sm text-stone-600">
               Enter OTP sent to{" "}
-              <span className="font-semibold tabular-nums text-stone-800">{otpDestinationLine}</span>
+              <span className="font-semibold tabular-nums text-stone-800">{otpPhoneLine}</span>
             </p>
 
             <div className="mt-6">
@@ -262,6 +314,8 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
                 type="button"
                 disabled={verifying}
                 onClick={() => {
+                  confirmationRef.current = null;
+                  clearVerifier();
                   setStep("form");
                   setOtp("");
                   setError("");

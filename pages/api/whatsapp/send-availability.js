@@ -1,12 +1,14 @@
 import { sendWhatsAppTemplateWithRetry } from "../../../lib/whatsappCloud";
 import { insertWhatsAppOutboundLog } from "../../../lib/whatsappOutboundLog";
 import {
+  buildWhatsAppWishlistTemplateHint,
+  extractGraphTemplateErrorCode,
+} from "../../../lib/whatsappTemplateHints";
+import {
+  getWhatsAppAvailabilityTemplateLanguage,
   getWhatsAppAvailabilityTemplateName,
-  getWhatsAppFallbackRecipient,
-  getWhatsAppTemplateLanguage,
   isWhatsAppCloudConfigured,
 } from "../../../lib/whatsappEnv";
-import { normalizeWhatsAppRecipientDigits } from "../../../lib/whatsappPhone";
 import { buildWishlistSummaryForTemplate, dedupeVendorTargetsByPhone } from "../../../lib/whatsappWishlistResolve";
 import { getApprovedVendorsByIds } from "../../../lib/vendors";
 
@@ -19,10 +21,9 @@ function parseJsonBody(req) {
 }
 
 /**
- * POST — same body shape as send-callback.
- * Template: WHATSAPP_TEMPLATE_AVAILABILITY (default availability_request).
- * Body parameters: [ eventDate, wishlistSummary, customerName ]
- * Create a matching approved template in Meta Business Manager.
+ * POST — same body shape as send-callback (no callbackPass required on this route).
+ * Template: WHATSAPP_TEMPLATE_AVAILABILITY (default `availability_request`).
+ * BODY must have exactly 3 variables in order: (1) event date, (2) wishlist summary, (3) customer name — approve in Meta Manager.
  */
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -70,11 +71,23 @@ export default async function handler(req, res) {
   );
 
   const templateName = getWhatsAppAvailabilityTemplateName();
-  const lang = getWhatsAppTemplateLanguage();
-  const fallbackLabel = (process.env.WHATSAPP_FALLBACK_VENDOR_LABEL || "THAALI").trim().slice(0, 256);
+  const lang = getWhatsAppAvailabilityTemplateLanguage();
 
   const targets = dedupeVendorTargetsByPhone(vendorRows || []);
   const results = [];
+
+  function availabilityFailureDetail() {
+    const first = results.find((r) => !r.ok);
+    const base = (first && first.error) || "Failed to send WhatsApp message.";
+    const hint = buildWhatsAppWishlistTemplateHint({
+      kind: "availability",
+      templateName,
+      languageCode: lang,
+      graphMessage: first?.error || "",
+      graphCode: first && typeof first.errorCode === "number" ? first.errorCode : null,
+    });
+    return hint ? `${base} ${hint}` : base;
+  }
 
   async function sendOne({ toDigits, vendorId }) {
     const bodyParams = [eventDate, summary, userName];
@@ -105,25 +118,15 @@ export default async function handler(req, res) {
       ok: attempt.ok,
       messageId: attempt.messageId,
       error: attempt.ok ? null : attempt.error,
+      errorCode: attempt.ok ? null : extractGraphTemplateErrorCode(attempt.raw),
     });
   }
 
   if (targets.length === 0) {
-    const fallbackDigits = normalizeWhatsAppRecipientDigits(getWhatsAppFallbackRecipient());
-    if (!fallbackDigits) {
-      return res.status(400).json({
-        ok: false,
-        error:
-          "No vendors with phone numbers in your wishlist, and WHATSAPP_FALLBACK_TO is not set (or invalid).",
-      });
-    }
-    await sendOne({ toDigits: fallbackDigits, vendorId: null });
-    const anyOk = results.some((r) => r.ok);
-    return res.status(anyOk ? 200 : 502).json({
-      ok: anyOk,
-      fallback: true,
-      results,
-      message: anyOk ? "Notification sent to THAALI." : "Failed to send WhatsApp message.",
+    return res.status(400).json({
+      ok: false,
+      error:
+        "No WhatsApp numbers on file for saved vendors (or they could not be normalized). Each vendor must have a valid WhatsApp phone on their profile.",
     });
   }
 
@@ -133,16 +136,18 @@ export default async function handler(req, res) {
 
   const okCount = results.filter((r) => r.ok).length;
   const anyOk = okCount > 0;
+  const defaultMsg =
+    okCount === results.length
+      ? "Vendors have been notified."
+      : `Sent ${okCount} of ${results.length} message(s).`;
+  const failDetail = anyOk ? null : availabilityFailureDetail();
   return res.status(anyOk ? 200 : 502).json({
     ok: anyOk,
-    fallback: false,
     sent: okCount,
     failed: results.length - okCount,
     results,
-    message:
-      okCount === results.length
-        ? "Vendors have been notified."
-        : `Sent ${okCount} of ${results.length} message(s).`,
+    message: anyOk ? defaultMsg : failDetail,
+    ...(anyOk ? {} : { error: failDetail }),
   });
 }
 

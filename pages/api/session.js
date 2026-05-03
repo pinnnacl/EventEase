@@ -18,6 +18,7 @@ export default function handler(req, res) {
         name: cust.name,
         location: cust.location || "",
         phone_hint: maskWhatsAppDestinationDigits(cust.phoneDigits),
+        sessionExpiresAtSec: cust.exp,
       }
     : null;
 

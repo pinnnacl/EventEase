@@ -1,12 +1,14 @@
 import { sendWhatsAppTemplateWithRetry } from "../../../lib/whatsappCloud";
 import { insertWhatsAppOutboundLog } from "../../../lib/whatsappOutboundLog";
 import {
+  buildWhatsAppWishlistTemplateHint,
+  extractGraphTemplateErrorCode,
+} from "../../../lib/whatsappTemplateHints";
+import {
+  getWhatsAppCallbackTemplateLanguage,
   getWhatsAppCallbackTemplateName,
-  getWhatsAppFallbackRecipient,
-  getWhatsAppTemplateLanguage,
   isWhatsAppCloudConfigured,
 } from "../../../lib/whatsappEnv";
-import { normalizeWhatsAppRecipientDigits } from "../../../lib/whatsappPhone";
 import { buildWishlistSummaryForTemplate, dedupeVendorTargetsByPhone } from "../../../lib/whatsappWishlistResolve";
 import { getApprovedVendorsByIds } from "../../../lib/vendors";
 import { verifyCallbackPass } from "../../../lib/otp/callbackSmsPass";
@@ -23,6 +25,9 @@ function parseJsonBody(req) {
  * POST
  * — Wishlist: { wishlist: { venues[], photography[], catering[], decoration[] }, eventDate?, userName? }
  * — Public profile: { vendorId, vendorCategory: "photographer"|"makeup", eventDate?, vendorName? (ignored for send; use DB name) }
+ *
+ * WhatsApp template (WHATSAPP_TEMPLATE_CALLBACK, default `callback_request`): BODY must have exactly 3
+ * variables in order: (1) vendor/venue display name, (2) event date, (3) shortlist summary text. Approve in Meta Manager.
  */
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -113,12 +118,24 @@ export default async function handler(req, res) {
   }
 
   const templateName = getWhatsAppCallbackTemplateName();
-  const lang = getWhatsAppTemplateLanguage();
-  const fallbackLabel = (process.env.WHATSAPP_FALLBACK_VENDOR_LABEL || "THAALI").trim().slice(0, 256);
+  const lang = getWhatsAppCallbackTemplateLanguage();
 
   const targets = dedupeVendorTargetsByPhone(vendorRows);
   /** @type {object[]} */
   const results = [];
+
+  function callbackFailureDetail() {
+    const first = results.find((r) => !r.ok);
+    const base = (first && first.error) || "Failed to send WhatsApp message.";
+    const hint = buildWhatsAppWishlistTemplateHint({
+      kind: "callback",
+      templateName,
+      languageCode: lang,
+      graphMessage: first?.error || "",
+      graphCode: first && typeof first.errorCode === "number" ? first.errorCode : null,
+    });
+    return hint ? `${base} ${hint}` : base;
+  }
 
   async function sendOne({ toDigits, vendorId, displayName }) {
     const bodyParams = [displayName, eventDate, summary];
@@ -149,26 +166,15 @@ export default async function handler(req, res) {
       ok: attempt.ok,
       messageId: attempt.messageId,
       error: attempt.ok ? null : attempt.error,
+      errorCode: attempt.ok ? null : extractGraphTemplateErrorCode(attempt.raw),
     });
   }
 
   if (targets.length === 0) {
-    const fallbackRaw = getWhatsAppFallbackRecipient();
-    const fallbackDigits = normalizeWhatsAppRecipientDigits(fallbackRaw);
-    if (!fallbackDigits) {
-      return res.status(400).json({
-        ok: false,
-        error:
-          "No vendor phone on file, and WHATSAPP_FALLBACK_TO is not set (or invalid).",
-      });
-    }
-    await sendOne({ toDigits: fallbackDigits, vendorId: null, displayName: fallbackLabel });
-    const anyOk = results.some((r) => r.ok);
-    return res.status(anyOk ? 200 : 502).json({
-      ok: anyOk,
-      fallback: true,
-      results,
-      message: anyOk ? "Notification sent to THAALI." : "Failed to send WhatsApp message.",
+    return res.status(400).json({
+      ok: false,
+      error:
+        "No WhatsApp number on file for this vendor (or it could not be normalized). Add a valid WhatsApp phone on the vendor profile.",
     });
   }
 
@@ -186,13 +192,14 @@ export default async function handler(req, res) {
       ? "Vendors have been notified."
       : `Sent ${okCount} of ${results.length} message(s).`;
 
+  const failDetail = anyOk ? null : callbackFailureDetail();
   return res.status(anyOk ? 200 : 502).json({
     ok: anyOk,
-    fallback: false,
     sent: okCount,
     failed: results.length - okCount,
     results,
-    message: anyOk ? defaultMsg : "Failed to send WhatsApp message.",
+    message: anyOk ? defaultMsg : failDetail,
+    ...(anyOk ? {} : { error: failDetail }),
   });
 }
 

@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import PhoneLoginSignupModal from "../components/auth/PhoneLoginSignupModal";
 
-/** @typedef {{ name: string; location?: string; phone_hint: string } | null} CustomerUser */
+/** @typedef {{ name: string; location?: string; phone_hint: string; sessionExpiresAtSec?: number } | null} CustomerUser */
 
 const CustomerAuthContext = createContext(
   /** @type {{
@@ -14,7 +14,11 @@ const CustomerAuthContext = createContext(
    *   refreshSession: () => Promise<void>;
    *   openLoginModal: () => void;
    *   ensureAuthenticated: (after: () => void | Promise<void>) => Promise<void>;
-   *   ensureCallbackAuth: (after: (callbackPass: string) => void | Promise<void>) => Promise<void>;
+   *   ensureCallbackAuth: (after: (callbackPass: string) => void | Promise<void>) => Promise<
+   *     | { ok: true }
+   *     | { ok: true; pendingModal: true }
+   *     | { ok: false; error: string }
+   *   >;
    * }} */ (null),
 );
 
@@ -42,6 +46,26 @@ export function CustomerAuthProvider({ children }) {
       setLoggedIn(Boolean(data.loggedIn));
       setLegacyLogin(Boolean(data.legacyLogin));
       setCustomer(data.customer && typeof data.customer === "object" ? data.customer : null);
+
+      if (data.customer && typeof window !== "undefined") {
+        try {
+          const k = "ee_cust_sess_slide_ms";
+          const cooldownMs = 12 * 60 * 60 * 1000;
+          const last = parseInt(sessionStorage.getItem(k) || "0", 10);
+          if (Date.now() - last >= cooldownMs) {
+            sessionStorage.setItem(k, String(Date.now()));
+            const slide = await fetch("/api/auth/refresh-session", {
+              method: "POST",
+              credentials: "same-origin",
+            });
+            if (!slide.ok) {
+              sessionStorage.removeItem(k);
+            }
+          }
+        } catch {
+          /* private mode / blocked storage */
+        }
+      }
     } catch {
       setLoggedIn(false);
       setLegacyLogin(false);
@@ -73,11 +97,21 @@ export function CustomerAuthProvider({ children }) {
         if (pd.ok && typeof pd.callbackPass === "string" && pd.callbackPass) {
           await after(pd.callbackPass);
           await refreshSession();
-          return;
+          return { ok: true };
         }
+        const fromApi = typeof pd.error === "string" && pd.error.trim() ? pd.error.trim() : "";
+        const fallback =
+          p.status === 401
+            ? "Your session expired. Please sign in again."
+            : "Could not prepare callback verification. Check server configuration or sign in again.";
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[CustomerAuth] mint-callback-pass failed while session exists:", pd?.error, p.status);
+        }
+        return { ok: false, error: fromApi || fallback };
       }
       afterAuthRef.current = after;
       setLoginOpen(true);
+      return { ok: true, pendingModal: true };
     },
     [refreshSession],
   );

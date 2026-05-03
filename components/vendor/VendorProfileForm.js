@@ -244,6 +244,7 @@ export default function VendorProfileForm({ vendor, onSaved }) {
     normalizeDigits(phone) &&
     localPhoneVerifiedE164 &&
     normalizeDigits(phone) === normalizeDigits(localPhoneVerifiedE164);
+  const isWhatsAppVerified = phoneVerified && phoneMatchesVerified;
 
   useEffect(() => {
     setOtpError("");
@@ -357,7 +358,8 @@ export default function VendorProfileForm({ vendor, onSaved }) {
         vendorOtpSessionRef.current = data.vendorOtpSession.trim();
       }
       setOtpCode("");
-      setOtpMsg("WhatsApp verified. You can save your profile.");
+      setOtpSentTo("");
+      setOtpMsg("");
       if (process.env.NODE_ENV !== "production" && data.sessionExpiresAt) {
         setOtpDebug(`session_exp=${data.sessionExpiresAt}`);
       } else {
@@ -1137,37 +1139,45 @@ export default function VendorProfileForm({ vendor, onSaved }) {
             className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3 text-sm outline-none ring-brand-500/25 transition focus:border-brand-500 focus:ring-2"
             required
           />
-          <p className="mt-2 text-xs text-stone-600">
-            WhatsApp OTP is sent to the <strong className="font-semibold text-stone-700">number in this field</strong>. After you verify, that number is saved on your profile. You still need a valid session to save other profile fields.
-          </p>
+          {isWhatsAppVerified ? (
+            <p className="mt-2 text-xs text-stone-600">
+              This number is verified for WhatsApp and saved on your profile. You still need a valid session to save other profile fields.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-stone-600">
+              WhatsApp OTP is sent to the <strong className="font-semibold text-stone-700">number in this field</strong>. After you verify, that number is saved on your profile. You still need a valid session to save other profile fields.
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void sendVendorWhatsAppOtp()}
-              disabled={otpSending || otpVerifying || otpCooldownSec > 0 || otpLocalLockSec > 0}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 transition hover:bg-stone-50 disabled:opacity-60"
-            >
-              {otpSending
-                ? "Sending…"
-                : otpLocalLockSec > 0
-                  ? `Try again in ${otpLocalLockSec}s`
-                  : otpCooldownSec > 0
-                    ? `Resend in ${otpCooldownSec}s`
-                    : "Send WhatsApp OTP"}
-            </button>
-            {phoneVerified && phoneMatchesVerified ? (
+            {!isWhatsAppVerified ? (
+              <button
+                type="button"
+                onClick={() => void sendVendorWhatsAppOtp()}
+                disabled={otpSending || otpVerifying || otpCooldownSec > 0 || otpLocalLockSec > 0}
+                className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 transition hover:bg-stone-50 disabled:opacity-60"
+              >
+                {otpSending
+                  ? "Sending…"
+                  : otpLocalLockSec > 0
+                    ? `Try again in ${otpLocalLockSec}s`
+                    : otpCooldownSec > 0
+                      ? `Resend in ${otpCooldownSec}s`
+                      : "Send WhatsApp OTP"}
+              </button>
+            ) : null}
+            {isWhatsAppVerified ? (
               <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
                 Verified
               </span>
             ) : null}
           </div>
-          {otpCooldownSec > 0 ? (
+          {!isWhatsAppVerified && otpCooldownSec > 0 ? (
             <p className="mt-2 text-xs text-stone-600">Please wait {otpCooldownSec}s before requesting another OTP.</p>
           ) : null}
-          {otpLocalLockSec > 0 ? (
+          {!isWhatsAppVerified && otpLocalLockSec > 0 ? (
             <p className="mt-1 text-xs text-amber-700">Temporary safety lock active. Try again in {otpLocalLockSec}s.</p>
           ) : null}
-          {otpSentTo ? (
+          {!isWhatsAppVerified && otpSentTo ? (
             <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <input
                 value={otpCode}
@@ -1192,13 +1202,16 @@ export default function VendorProfileForm({ vendor, onSaved }) {
               </button>
             </div>
           ) : null}
-          {otpMsg ? (
+          {!isWhatsAppVerified && otpMsg ? (
             <div className="mt-2 space-y-1.5">
               <p className="text-xs font-medium text-emerald-700">{otpMsg}</p>
               <p className="text-xs leading-relaxed text-stone-600">
                 If nothing arrives: open WhatsApp on the number shown in the hint (same as the field above). Check your <strong className="font-semibold text-stone-700">primary</strong> device first. In Meta Business Suite → WhatsApp, confirm <em>delivery</em> for the message id in dev logs.
               </p>
             </div>
+          ) : null}
+          {isWhatsAppVerified ? (
+            <p className="mt-2 text-xs font-medium text-emerald-700">WhatsApp verified</p>
           ) : null}
           {otpError ? <p className="mt-2 text-xs font-medium text-red-700">{otpError}</p> : null}
           {otpDebug && process.env.NODE_ENV !== "production" ? (

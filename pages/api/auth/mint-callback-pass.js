@@ -1,5 +1,5 @@
+import { requireCustomerSession } from "../../../lib/auth/requireCustomerSession";
 import { mintCallbackPassForPhoneDigits } from "../../../lib/otp/callbackSmsPass";
-import { readCustomerSessionFromCookie } from "../../../lib/auth-cookie";
 
 export default function handler(req, res) {
   if (req.method !== "POST") {
@@ -7,10 +7,8 @@ export default function handler(req, res) {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
-  const session = readCustomerSessionFromCookie(req.headers.cookie);
-  if (!session) {
-    return res.status(401).json({ ok: false, error: "Sign in to continue." });
-  }
+  const session = requireCustomerSession(req, res);
+  if (!session) return;
 
   let callbackPass;
   try {
