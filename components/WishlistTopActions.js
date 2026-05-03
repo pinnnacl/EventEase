@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useWishlist } from "../context/WishlistContext";
 import { readStoredEventDateLabel } from "../lib/wishlistActions";
 
@@ -19,6 +20,7 @@ async function postWhatsAppApi(path, payload) {
  */
 export default function WishlistTopActions() {
   const { wishlist } = useWishlist();
+  const { ensureCallbackAuth } = useCustomerAuth();
   const [sending, setSending] = useState(/** @type {null | "callback" | "availability"} */ (null));
   const [notice, setNotice] = useState(/** @type {null | { type: "success" | "error"; text: string }} */ (null));
 
@@ -41,13 +43,15 @@ export default function WishlistTopActions() {
     [wishlist],
   );
 
-  const run = useCallback(
-    async (kind) => {
+  const sendCallbackWithPass = useCallback(
+    async (callbackPass) => {
       setNotice(null);
-      setSending(kind);
-      const path = kind === "callback" ? "/api/whatsapp/send-callback" : "/api/whatsapp/send-availability";
+      setSending("callback");
       try {
-        const { res, data } = await postWhatsAppApi(path, payloadBase);
+        const { res, data } = await postWhatsAppApi("/api/whatsapp/send-callback", {
+          ...payloadBase,
+          callbackPass,
+        });
         if (res.ok && data.ok) {
           setNotice({ type: "success", text: data.message || "Vendors have been notified." });
         } else {
@@ -63,6 +67,34 @@ export default function WishlistTopActions() {
       }
     },
     [payloadBase],
+  );
+
+  const run = useCallback(
+    async (kind) => {
+      if (kind === "callback") {
+        setNotice(null);
+        void ensureCallbackAuth((pass) => sendCallbackWithPass(pass));
+        return;
+      }
+      setNotice(null);
+      setSending(kind);
+      try {
+        const { res, data } = await postWhatsAppApi("/api/whatsapp/send-availability", payloadBase);
+        if (res.ok && data.ok) {
+          setNotice({ type: "success", text: data.message || "Vendors have been notified." });
+        } else {
+          setNotice({
+            type: "error",
+            text: data.error || data.message || "Could not send WhatsApp messages.",
+          });
+        }
+      } catch {
+        setNotice({ type: "error", text: "Network error." });
+      } finally {
+        setSending(null);
+      }
+    },
+    [payloadBase, ensureCallbackAuth, sendCallbackWithPass],
   );
 
   const busy = sending !== null;

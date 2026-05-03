@@ -214,3 +214,18 @@ body {
   background: rgb(190 18 60) !important;
   color: white;
 }
+
+@keyframes ee-auth-step-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ee-auth-step-animate {
+  animation: ee-auth-step-fade 0.24s ease-out forwards;
+}

@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "prod:ngrok": "bash scripts/run-ngrok-prod.sh",
     "lint": "next lint",
     "weaviate:init": "node scripts/weaviate/initSchema.js",
     "weaviate:backfill": "node scripts/weaviate/backfillVendorImages.js"

@@ -1,6 +1,14 @@
+import {
+  isVendorOtpEnforcementDisabled,
+  isVendorProfileSessionSigningConfigured,
+  verifyVendorProfileSessionPass,
+} from "../../../lib/otp/vendorSessionPass";
 import { requireVendor, vendorGateErrorMessage } from "../../../lib/supabaseAuth";
 import { updateVendorProfile } from "../../../lib/vendors";
+import { normalizeWhatsAppRecipientDigits } from "../../../lib/whatsappPhone";
 import { reindexVendorMediaToWeaviate } from "../../../lib/weaviateIngest";
+
+const LOG_PREFIX = "[vendor-whatsapp-otp]";
 
 export default async function handler(req, res) {
   if (req.method !== "PUT" && req.method !== "PATCH") {
@@ -21,6 +29,66 @@ export default async function handler(req, res) {
       return res.status(gate.status).json({ ok: false, error: vendorGateErrorMessage(gate.status) });
     }
 
+    if (!isVendorOtpEnforcementDisabled()) {
+      if (!isVendorProfileSessionSigningConfigured()) {
+        console.error(`${LOG_PREFIX} PATCH /api/vendor/update: VENDOR_OTP_SESSION_SECRET (or CALLBACK_OTP_SECRET) not set`);
+        return res.status(503).json({
+          ok: false,
+          error:
+            "Vendor profile updates are temporarily unavailable: server missing VENDOR_OTP_SESSION_SECRET (or CALLBACK_OTP_SECRET).",
+        });
+      }
+
+      /** Vendor profile saves use WhatsApp OTP only — require this header (or same token in body for tests). */
+      const headerRaw =
+        typeof req.headers["x-vendor-whatsapp-otp-session"] === "string"
+          ? req.headers["x-vendor-whatsapp-otp-session"]
+          : "";
+      const session =
+        headerRaw.trim() ||
+        (typeof body?.vendorOtpSession === "string" ? body.vendorOtpSession.trim() : "");
+
+      if (!session) {
+        console.warn(`${LOG_PREFIX} PATCH rejected: missing x-vendor-whatsapp-otp-session`, { userId: gate.user.id });
+        return res.status(403).json({
+          ok: false,
+          error:
+            "Missing x-vendor-whatsapp-otp-session. Send WhatsApp OTP, verify the code, then save with that header.",
+        });
+      }
+
+      const sess = verifyVendorProfileSessionPass(session, gate.user.id);
+      if (!sess.ok) {
+        console.warn(`${LOG_PREFIX} PATCH rejected: invalid or expired session`, {
+          userId: gate.user.id,
+          reason: sess.error,
+        });
+        return res.status(403).json({
+          ok: false,
+          error:
+            sess.error ||
+            "WhatsApp OTP session invalid or expired. Request a new code, verify, and try saving again.",
+        });
+      }
+
+      if (sess.ok && sess.verifiedPhoneDigits && body && typeof body === "object" && "phone" in body) {
+        const pd = normalizeWhatsAppRecipientDigits(String(body.phone ?? ""));
+        if (pd && pd !== sess.verifiedPhoneDigits) {
+          console.warn(`${LOG_PREFIX} PATCH rejected: phone differs from WhatsApp-verified number`, {
+            userId: gate.user.id,
+          });
+          return res.status(403).json({
+            ok: false,
+            error:
+              "The phone in this save does not match the number you verified with WhatsApp. Send OTP again for the new number, verify, then save—or keep the same phone you verified.",
+          });
+        }
+      }
+    }
+
+    const patch = body && typeof body === "object" ? { ...body } : {};
+    delete patch.vendorOtpSession;
+
     const {
       data,
       error,
@@ -29,7 +97,7 @@ export default async function handler(req, res) {
       venueDetailsDropped,
       photographerProfileDropped,
       makeupProfileDropped,
-    } = await updateVendorProfile(gate.user.id, body || {});
+    } = await updateVendorProfile(gate.user.id, patch);
     if (error) {
       const code = error.message === "No vendor profile" ? 404 : 400;
       return res.status(code).json({ ok: false, error: error.message || "Could not update" });

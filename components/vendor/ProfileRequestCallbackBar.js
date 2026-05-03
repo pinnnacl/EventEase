@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useCustomerAuth } from "../../context/CustomerAuthContext";
 import { readStoredEventDateLabel } from "../../lib/wishlistActions";
 
 /**
@@ -21,6 +22,7 @@ export default function ProfileRequestCallbackBar({
   demo = false,
   variant,
 }) {
+  const { ensureCallbackAuth } = useCustomerAuth();
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState(/** @type {null | { type: "success" | "error"; text: string }} */ (null));
 
@@ -30,34 +32,44 @@ export default function ProfileRequestCallbackBar({
     return () => window.clearTimeout(t);
   }, [notice]);
 
-  const onRequest = useCallback(async () => {
-    if (demo || !vendorId) return;
-    setSending(true);
-    setNotice(null);
-    try {
-      const res = await fetch("/api/whatsapp/send-callback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          vendorId,
-          vendorCategory: category,
-          vendorName: vendorName || "",
-          eventDate: readStoredEventDateLabel() || "",
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.ok) {
-        setNotice({ type: "success", text: "Vendor has been notified." });
-      } else {
+  const sendWithPass = useCallback(
+    async (callbackPass) => {
+      if (demo || !vendorId) return;
+      setSending(true);
+      setNotice(null);
+      try {
+        const res = await fetch("/api/whatsapp/send-callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            vendorId,
+            vendorCategory: category,
+            vendorName: vendorName || "",
+            eventDate: readStoredEventDateLabel() || "",
+            callbackPass,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          setNotice({ type: "success", text: "Vendor has been notified." });
+        } else {
+          setNotice({ type: "error", text: data.error || "Something went wrong. Try again." });
+        }
+      } catch {
         setNotice({ type: "error", text: "Something went wrong. Try again." });
+      } finally {
+        setSending(false);
       }
-    } catch {
-      setNotice({ type: "error", text: "Something went wrong. Try again." });
-    } finally {
-      setSending(false);
-    }
-  }, [vendorId, vendorName, category, demo]);
+    },
+    [vendorId, vendorName, category, demo],
+  );
+
+  const onRequest = useCallback(() => {
+    if (demo || !vendorId) return;
+    setNotice(null);
+    void ensureCallbackAuth((callbackPass) => sendWithPass(callbackPass));
+  }, [demo, vendorId, ensureCallbackAuth, sendWithPass]);
 
   const bar =
     variant === "makeup"

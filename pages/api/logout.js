@@ -1,4 +1,4 @@
-import { AUTH_COOKIE_NAME } from "../../lib/auth-cookie";
+import { AUTH_COOKIE_NAME, CUSTOMER_SESSION_COOKIE_NAME } from "../../lib/auth-cookie";
 
 export default function handler(req, res) {
   if (req.method !== "POST") {
@@ -7,10 +7,10 @@ export default function handler(req, res) {
   }
 
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  res.setHeader(
-    "Set-Cookie",
+  res.setHeader("Set-Cookie", [
     `${AUTH_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`,
-  );
+    `${CUSTOMER_SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`,
+  ]);
 
   return res.status(200).json({ ok: true });
 }

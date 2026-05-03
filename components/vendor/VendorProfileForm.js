@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { inputDisplayImageUrl, parseResponsiveImageField } from "../../lib/imageVariants";
-import { getFirebaseClientAuth } from "../../lib/firebase/client";
 import { ingestImageFromUrl, needsUrlIngestion } from "../../lib/vendorClientIngest";
 import {
   PREDEFINED_VENUE_DETAIL_TITLES,
@@ -14,6 +12,7 @@ import {
   PHOTO_GALLERY_CATEGORIES,
   parsePhotographyPackagePrice,
 } from "../../lib/photographerProfileContent";
+import { maskWhatsAppDestinationDigits, normalizeWhatsAppRecipientDigits } from "../../lib/whatsappPhone";
 import { buildInitialMakeupProfile, makeupProfileToPayload } from "./makeupProfileFormState";
 import MakeupVendorProfileSection from "./MakeupVendorProfileSection";
 
@@ -96,33 +95,15 @@ function normalizeDigits(raw) {
   return d;
 }
 
-function toE164(raw) {
-  const d = normalizeDigits(raw);
-  return d ? `+${d}` : "";
-}
-
-function mapFirebaseOtpError(err) {
-  const code = String(err?.code || "");
-  const msg = String(err?.message || "");
-  if (code === "auth/invalid-app-credential" || msg.includes("auth/invalid-app-credential")) {
-    return "OTP setup issue: check authorized domain for current host, ensure Phone sign-in is enabled, and remove restrictive API key referrer rules (or allow localhost/127.0.0.1).";
-  }
-  if (code === "auth/billing-not-enabled" || msg.includes("auth/billing-not-enabled")) {
-    return "Firebase billing is not enabled for Phone Auth. Enable billing (Blaze plan) or use Firebase test phone numbers.";
-  }
-  if (code === "auth/too-many-requests" || msg.includes("auth/too-many-requests")) {
-    return "Too many OTP attempts. Please wait a few minutes and try again.";
-  }
-  if (code === "auth/invalid-verification-code" || msg.includes("auth/invalid-verification-code")) {
-    return "Invalid OTP code. Please check and try again.";
-  }
-  if (code === "auth/code-expired" || msg.includes("auth/code-expired")) {
-    return "OTP expired. Request a new OTP and try again.";
-  }
-  if (code === "auth/captcha-check-failed" || msg.includes("captcha")) {
-    return "Captcha verification failed. Refresh and retry; for local dev, you can enable Firebase OTP test mode.";
-  }
-  return msg || "Could not complete OTP verification.";
+/**
+ * @param {{ error?: string } | null} data
+ * @param {number} status
+ */
+function messageFromVendorWhatsappOtpResponse(data, status) {
+  if (data && typeof data.error === "string" && data.error.trim()) return data.error.trim();
+  if (status === 429) return "Too many requests. Please wait and try again.";
+  if (status >= 500) return "Server error. Try again later.";
+  return "Could not complete WhatsApp verification.";
 }
 
 /**
@@ -242,8 +223,8 @@ export default function VendorProfileForm({ vendor, onSaved }) {
   const [otpCooldownSec, setOtpCooldownSec] = useState(0);
   const [otpLocalLockSec, setOtpLocalLockSec] = useState(0);
   const otpFailureCountRef = useRef(0);
-  const recaptchaVerifierRef = useRef(null);
-  const confirmationRef = useRef(null);
+  /** Short-lived token from POST /api/vendor/otp/whatsapp/verify — required for PATCH /api/vendor/update when enforcement is on. */
+  const vendorOtpSessionRef = useRef("");
 
   const categoryOptions = useMemo(() => {
     const c = vendor?.category;
@@ -270,8 +251,15 @@ export default function VendorProfileForm({ vendor, onSaved }) {
     setOtpDebug("");
     setOtpCode("");
     setOtpSentTo("");
-    confirmationRef.current = null;
   }, [phone]);
+
+  useEffect(() => {
+    vendorOtpSessionRef.current = "";
+    setOtpCode("");
+    setOtpSentTo("");
+    setOtpMsg("");
+    setOtpError("");
+  }, [vendor.id]);
 
   useEffect(() => {
     if (otpCooldownSec <= 0) return;
@@ -289,185 +277,99 @@ export default function VendorProfileForm({ vendor, onSaved }) {
     return () => clearInterval(t);
   }, [otpLocalLockSec]);
 
-  useEffect(() => {
-    return () => {
-      const verifier = recaptchaVerifierRef.current;
-      if (verifier && typeof verifier.clear === "function") {
-        verifier.clear();
-      }
-      recaptchaVerifierRef.current = null;
-      if (typeof window !== "undefined") {
-        const el = document.getElementById("recaptcha-container");
-        if (el) el.innerHTML = "";
-      }
-    };
-  }, []);
-
-  const clearRecaptchaVerifier = useCallback(() => {
-    const prev = recaptchaVerifierRef.current;
-    if (prev && typeof prev.clear === "function") {
-      try {
-        prev.clear();
-      } catch {
-        // Ignore stale verifier cleanup errors.
-      }
-    }
-    recaptchaVerifierRef.current = null;
-    if (typeof window !== "undefined") {
-      const el = document.getElementById("recaptcha-container");
-      if (el) el.innerHTML = "";
-    }
-  }, []);
-
-  const createFreshRecaptchaVerifier = useCallback(async () => {
-    clearRecaptchaVerifier();
-    if (typeof window === "undefined") {
-      throw new Error("reCAPTCHA is only available in browser.");
-    }
-    const container = document.getElementById("recaptcha-container");
-    if (!container) {
-      throw new Error("reCAPTCHA container not found in DOM.");
-    }
-
-    const auth = getFirebaseClientAuth();
-    // Always bind verifier to a fresh inner mount node to avoid
-    // "reCAPTCHA has already been rendered in this element" during dev/HMR retries.
-    container.innerHTML = "";
-    const mountEl = document.createElement("div");
-    mountEl.id = `recaptcha-container-inner-${Date.now()}`;
-    container.appendChild(mountEl);
-
-    let verifier;
-    try {
-      verifier = new RecaptchaVerifier(auth, mountEl, {
-        size: "invisible",
-        callback: () => {},
-        "error-callback": () => {
-          clearRecaptchaVerifier();
-          setOtpError("Captcha verification failed. Please try again.");
-        },
-        "expired-callback": () => {
-          clearRecaptchaVerifier();
-        },
-      });
-    } catch (e) {
-      const msg = String(e?.message || e || "");
-      if (!msg.toLowerCase().includes("already been rendered")) throw e;
-      container.innerHTML = "";
-      const retryEl = document.createElement("div");
-      retryEl.id = `recaptcha-container-inner-retry-${Date.now()}`;
-      container.appendChild(retryEl);
-      verifier = new RecaptchaVerifier(auth, retryEl, {
-        size: "invisible",
-        callback: () => {},
-        "error-callback": () => {
-          clearRecaptchaVerifier();
-          setOtpError("Captcha verification failed. Please try again.");
-        },
-        "expired-callback": () => {
-          clearRecaptchaVerifier();
-        },
-      });
-    }
-    await verifier.render();
-    recaptchaVerifierRef.current = verifier;
-    return verifier;
-  }, [clearRecaptchaVerifier]);
-
-  const sendPhoneOtp = useCallback(async () => {
+  const sendVendorWhatsAppOtp = useCallback(async () => {
     if (otpLocalLockSec > 0) {
-      setOtpError(`Please wait ${otpLocalLockSec}s before trying OTP again.`);
+      setOtpError(`Please wait ${otpLocalLockSec}s before trying again.`);
       return;
     }
     if (otpCooldownSec > 0) {
-      setOtpError(`Please wait ${otpCooldownSec}s before requesting another OTP.`);
-      return;
-    }
-
-    const e164 = toE164(phone);
-    if (!e164) {
-      setOtpError("Enter a valid phone number first.");
+      setOtpError(`Please wait ${otpCooldownSec}s before requesting another code.`);
       return;
     }
     setOtpError("");
     setOtpMsg("");
     setOtpSending(true);
     try {
-      const auth = getFirebaseClientAuth();
-      if (process.env.NEXT_PUBLIC_FIREBASE_OTP_TEST_MODE === "true") {
-        auth.settings.appVerificationDisabledForTesting = true;
+      const res = await fetch("/api/vendor/otp/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ phone: phone.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        setOtpError(messageFromVendorWhatsappOtpResponse(data, res.status));
+        otpFailureCountRef.current += 1;
+        setOtpCooldownSec(30);
+        if (otpFailureCountRef.current >= 5) {
+          setOtpLocalLockSec(300);
+          setOtpError("Too many failed send attempts. Please wait 5 minutes before trying again.");
+        }
+        return;
       }
-      const verifier = await createFreshRecaptchaVerifier();
-      const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
-      confirmationRef.current = confirmation;
-      setOtpSentTo(e164);
-      setOtpMsg(`OTP sent to ${e164}`);
-      setOtpDebug("");
+      const hint =
+        typeof data.sentToHint === "string" && data.sentToHint.trim()
+          ? data.sentToHint.trim()
+          : maskWhatsAppDestinationDigits(normalizeWhatsAppRecipientDigits(phone.trim()));
+      setOtpSentTo(hint || "this number");
+      setOtpMsg(typeof data.message === "string" ? data.message : "Check WhatsApp for your code.");
+      if (process.env.NODE_ENV !== "production" && data.messageId) {
+        setOtpDebug(`message_id=${data.messageId}`);
+      } else {
+        setOtpDebug("");
+      }
       otpFailureCountRef.current = 0;
       setOtpCooldownSec(60);
-      // Prevent stale verifier reuse on the next request.
-      clearRecaptchaVerifier();
+      vendorOtpSessionRef.current = "";
     } catch (err) {
-      clearRecaptchaVerifier();
-      setOtpError(mapFirebaseOtpError(err));
-      const code = String(err?.code || "unknown");
-      const message = String(err?.message || "no-message");
-      const origin = typeof window !== "undefined" ? window.location.origin : "server";
-      const mode = process.env.NEXT_PUBLIC_FIREBASE_OTP_TEST_MODE === "true" ? "test" : "real";
-      setOtpDebug(`code=${code}; mode=${mode}; origin=${origin}; phone=${e164}; message=${message}`);
-      otpFailureCountRef.current += 1;
-      setOtpCooldownSec(30);
-      if (otpFailureCountRef.current >= 3) {
-        setOtpLocalLockSec(180);
-        setOtpError("Too many failed attempts. Please wait 3 minutes before trying again.");
-      }
+      setOtpError(err instanceof Error ? err.message : "Network error.");
     } finally {
       setOtpSending(false);
     }
-  }, [clearRecaptchaVerifier, createFreshRecaptchaVerifier, otpCooldownSec, otpLocalLockSec, phone]);
+  }, [otpCooldownSec, otpLocalLockSec, phone]);
 
-  const verifyPhoneOtp = useCallback(async () => {
-    const confirmation = confirmationRef.current;
-    if (!confirmation) {
-      setOtpError("Please request OTP first.");
-      return;
-    }
+  const verifyVendorWhatsAppOtp = useCallback(async () => {
     if (!otpCode.trim()) {
-      setOtpError("Enter the OTP code.");
+      setOtpError("Enter the 6-digit code from WhatsApp.");
       return;
     }
     setOtpError("");
     setOtpMsg("");
     setOtpVerifying(true);
     try {
-      const cred = await confirmation.confirm(otpCode.trim());
-      const idToken = await cred.user.getIdToken(true);
-      const res = await fetch("/api/vendor/verify-phone", {
+      const res = await fetch("/api/vendor/otp/whatsapp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ idToken, phone }),
+        body: JSON.stringify({ code: otpCode.trim() }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
-        setOtpError(data?.error || "Could not save phone verification.");
+        setOtpError(messageFromVendorWhatsappOtpResponse(data, res.status));
+        otpFailureCountRef.current += 1;
+        if (otpFailureCountRef.current >= 8) {
+          setOtpLocalLockSec(180);
+          setOtpError("Too many incorrect attempts. Wait 3 minutes or request a new WhatsApp code.");
+        }
         return;
       }
+      if (typeof data.vendorOtpSession === "string" && data.vendorOtpSession.trim()) {
+        vendorOtpSessionRef.current = data.vendorOtpSession.trim();
+      }
       setOtpCode("");
-      setOtpSentTo("");
-      confirmationRef.current = null;
-      setOtpMsg("Phone verified successfully.");
+      setOtpMsg("WhatsApp verified. You can save your profile.");
+      if (process.env.NODE_ENV !== "production" && data.sessionExpiresAt) {
+        setOtpDebug(`session_exp=${data.sessionExpiresAt}`);
+      } else {
+        setOtpDebug("");
+      }
       if (data?.vendor) {
         setLocalPhoneVerifiedAt(data.vendor.phoneVerifiedAt ?? new Date().toISOString());
         setLocalPhoneVerifiedE164(data.vendor.phoneVerifiedE164 ?? null);
+        if (typeof onSaved === "function") onSaved(data.vendor);
       }
     } catch (err) {
-      setOtpError(mapFirebaseOtpError(err));
-      const code = String(err?.code || "unknown");
-      const message = String(err?.message || "no-message");
-      const origin = typeof window !== "undefined" ? window.location.origin : "server";
-      const mode = process.env.NEXT_PUBLIC_FIREBASE_OTP_TEST_MODE === "true" ? "test" : "real";
-      setOtpDebug(`verify_code=${code}; mode=${mode}; origin=${origin}; message=${message}`);
+      setOtpError(err instanceof Error ? err.message : "Network error.");
     } finally {
       setOtpVerifying(false);
     }
@@ -729,6 +631,15 @@ export default function VendorProfileForm({ vendor, onSaved }) {
         }
       }
     }
+    const otpEnforcementOff =
+      String(process.env.NEXT_PUBLIC_VENDOR_OTP_ENFORCE ?? "").trim() === "0";
+    if (!otpEnforcementOff && !vendorOtpSessionRef.current?.trim()) {
+      setError(
+        "Verify your WhatsApp OTP before saving. Tap Send WhatsApp OTP, enter the code we send to your registered number, then save.",
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       let profileValue = profileImage.trim();
@@ -866,9 +777,14 @@ export default function VendorProfileForm({ vendor, onSaved }) {
         payload.facilities = facilities;
       }
 
+      const headers = { "Content-Type": "application/json" };
+      const sess = vendorOtpSessionRef.current?.trim();
+      if (sess) {
+        headers["x-vendor-whatsapp-otp-session"] = sess;
+      }
       const res = await fetch("/api/vendor/update", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "same-origin",
         body: JSON.stringify(payload),
       });
@@ -1221,20 +1137,23 @@ export default function VendorProfileForm({ vendor, onSaved }) {
             className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3 text-sm outline-none ring-brand-500/25 transition focus:border-brand-500 focus:ring-2"
             required
           />
+          <p className="mt-2 text-xs text-stone-600">
+            WhatsApp OTP is sent to the <strong className="font-semibold text-stone-700">number in this field</strong>. After you verify, that number is saved on your profile. You still need a valid session to save other profile fields.
+          </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={sendPhoneOtp}
+              onClick={() => void sendVendorWhatsAppOtp()}
               disabled={otpSending || otpVerifying || otpCooldownSec > 0 || otpLocalLockSec > 0}
               className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 transition hover:bg-stone-50 disabled:opacity-60"
             >
               {otpSending
-                ? "Sending OTP..."
+                ? "Sending…"
                 : otpLocalLockSec > 0
                   ? `Try again in ${otpLocalLockSec}s`
                   : otpCooldownSec > 0
                     ? `Resend in ${otpCooldownSec}s`
-                    : "Verify phone (optional)"}
+                    : "Send WhatsApp OTP"}
             </button>
             {phoneVerified && phoneMatchesVerified ? (
               <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
@@ -1256,31 +1175,37 @@ export default function VendorProfileForm({ vendor, onSaved }) {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    void verifyPhoneOtp();
+                    void verifyVendorWhatsAppOtp();
                   }
                 }}
                 className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2 text-sm outline-none ring-brand-500/25 focus:border-brand-500 focus:ring-2"
-                placeholder={`Enter OTP sent to ${otpSentTo}`}
+                placeholder={`6-digit code (${otpSentTo})`}
                 inputMode="numeric"
               />
               <button
                 type="button"
-                onClick={verifyPhoneOtp}
+                onClick={() => void verifyVendorWhatsAppOtp()}
                 disabled={otpVerifying}
                 className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
               >
-                {otpVerifying ? "Verifying..." : "Verify OTP"}
+                {otpVerifying ? "Verifying…" : "Verify WhatsApp code"}
               </button>
             </div>
           ) : null}
-          {otpMsg ? <p className="mt-2 text-xs font-medium text-emerald-700">{otpMsg}</p> : null}
+          {otpMsg ? (
+            <div className="mt-2 space-y-1.5">
+              <p className="text-xs font-medium text-emerald-700">{otpMsg}</p>
+              <p className="text-xs leading-relaxed text-stone-600">
+                If nothing arrives: open WhatsApp on the number shown in the hint (same as the field above). Check your <strong className="font-semibold text-stone-700">primary</strong> device first. In Meta Business Suite → WhatsApp, confirm <em>delivery</em> for the message id in dev logs.
+              </p>
+            </div>
+          ) : null}
           {otpError ? <p className="mt-2 text-xs font-medium text-red-700">{otpError}</p> : null}
           {otpDebug && process.env.NODE_ENV !== "production" ? (
             <pre className="mt-2 overflow-x-auto rounded-lg border border-stone-200 bg-stone-50 px-2 py-1 text-[11px] text-stone-700">
               {otpDebug}
             </pre>
           ) : null}
-          <div id="recaptcha-container" />
         </div>
         <div>
           <label className="block text-sm font-semibold text-stone-800" htmlFor="vp-description">

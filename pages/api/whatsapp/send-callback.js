@@ -9,6 +9,7 @@ import {
 import { normalizeWhatsAppRecipientDigits } from "../../../lib/whatsappPhone";
 import { buildWishlistSummaryForTemplate, dedupeVendorTargetsByPhone } from "../../../lib/whatsappWishlistResolve";
 import { getApprovedVendorsByIds } from "../../../lib/vendors";
+import { verifyCallbackPass } from "../../../lib/otp/callbackSmsPass";
 
 function parseJsonBody(req) {
   try {
@@ -39,6 +40,20 @@ export default async function handler(req, res) {
   const body = parseJsonBody(req);
   if (!body || typeof body !== "object") {
     return res.status(400).json({ ok: false, error: "Invalid JSON body" });
+  }
+
+  const callbackPass =
+    typeof body.callbackPass === "string"
+      ? body.callbackPass.trim()
+      : typeof body.callbackSmsPass === "string"
+        ? body.callbackSmsPass.trim()
+        : "";
+  const passCheck = verifyCallbackPass(callbackPass);
+  if (!passCheck.ok) {
+    return res.status(401).json({
+      ok: false,
+      error: passCheck.error || "SMS verification required before requesting a callback.",
+    });
   }
 
   const eventDateRaw = typeof body.eventDate === "string" ? body.eventDate.trim() : "";

@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { User } from "lucide-react";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useCustomerAuth } from "../../context/CustomerAuthContext";
 import { useWishlist } from "../../context/WishlistContext";
 import HeaderHeart from "../HeaderHeart";
 import AiSearchExperience from "./AiSearchExperience";
@@ -46,47 +48,37 @@ function LogoEventizo({ className = "h-10 w-auto shrink-0 text-[#0B2D74]" }) {
 export default function AppLayout({ children }) {
   const router = useRouter();
   const { count: wishlistCount } = useWishlist();
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [checked, setChecked] = useState(false);
+  const { loading, loggedIn, legacyLogin, customer, refreshSession, openLoginModal } = useCustomerAuth();
+  const checked = !loading;
   const [headerEl, setHeaderEl] = useState(null);
   const [vendorMenuOpen, setVendorMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const vendorMenuRef = useRef(null);
-
-  const refreshSession = useCallback(async () => {
-    try {
-      const res = await fetch("/api/session");
-      const data = await res.json().catch(() => ({}));
-      setLoggedIn(Boolean(data.loggedIn));
-    } catch {
-      setLoggedIn(false);
-    } finally {
-      setChecked(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    refreshSession();
-  }, [refreshSession]);
+  const accountMenuRef = useRef(null);
 
   useEffect(() => {
     function onRoute() {
-      refreshSession();
+      void refreshSession();
     }
     router.events.on("routeChangeComplete", onRoute);
     return () => router.events.off("routeChangeComplete", onRoute);
   }, [router.events, refreshSession]);
 
   useEffect(() => {
-    if (!vendorMenuOpen) return;
+    if (!vendorMenuOpen && !accountMenuOpen) return;
 
     function onKeyDown(e) {
-      if (e.key === "Escape") setVendorMenuOpen(false);
+      if (e.key === "Escape") {
+        setVendorMenuOpen(false);
+        setAccountMenuOpen(false);
+      }
     }
 
     function onPointerDown(e) {
-      const el = vendorMenuRef.current;
-      if (!el) return;
-      if (!el.contains(e.target)) setVendorMenuOpen(false);
+      const vEl = vendorMenuRef.current;
+      if (vEl && !vEl.contains(e.target)) setVendorMenuOpen(false);
+      const aEl = accountMenuRef.current;
+      if (aEl && !aEl.contains(e.target)) setAccountMenuOpen(false);
     }
 
     window.addEventListener("keydown", onKeyDown);
@@ -95,11 +87,12 @@ export default function AppLayout({ children }) {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [vendorMenuOpen]);
+  }, [vendorMenuOpen, accountMenuOpen]);
 
   useEffect(() => {
     function closeOnRouteStart() {
       setVendorMenuOpen(false);
+      setAccountMenuOpen(false);
     }
     router.events.on("routeChangeStart", closeOnRouteStart);
     return () => router.events.off("routeChangeStart", closeOnRouteStart);
@@ -114,8 +107,9 @@ export default function AppLayout({ children }) {
   const isPhotographyDetailRoute = pathname === "/photography/demo" || pathname === "/photography/[id]";
 
   async function handleLogout() {
-    await fetch("/api/logout", { method: "POST" });
-    setLoggedIn(false);
+    await fetch("/api/logout", { method: "POST", credentials: "same-origin" });
+    setAccountMenuOpen(false);
+    await refreshSession();
     await router.push("/");
   }
 
@@ -209,13 +203,115 @@ export default function AppLayout({ children }) {
                 ) : null}
               </Link>
 
+              {checked && customer ? (
+                <div ref={accountMenuRef} className="relative">
+                  <button
+                    type="button"
+                    aria-label="Account menu"
+                    aria-haspopup="menu"
+                    aria-expanded={accountMenuOpen}
+                    onClick={() => {
+                      setAccountMenuOpen((o) => !o);
+                      setVendorMenuOpen(false);
+                    }}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#0F766E] to-[#0a5c56] text-sm font-bold uppercase text-white shadow-md ring-2 ring-white/90 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                  >
+                    {(customer.name || "").trim() ? (
+                      (customer.name || "").trim().charAt(0)
+                    ) : (
+                      <User className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+                    )}
+                  </button>
+                  <div
+                    role="menu"
+                    aria-label="Account"
+                    className={`absolute right-0 z-[75] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-stone-200/70 bg-white/95 p-1.5 shadow-[0_14px_44px_-26px_rgba(20,43,60,0.36)] backdrop-blur-md transition duration-200 ${
+                      accountMenuOpen
+                        ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                        : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
+                    }`}
+                  >
+                    <Link
+                      href="/account"
+                      role="menuitem"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="block w-full rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                    >
+                      View Profile
+                    </Link>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        void handleLogout();
+                      }}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              ) : checked && legacyLogin ? (
+                <div ref={accountMenuRef} className="relative">
+                  <button
+                    type="button"
+                    aria-label="Account menu"
+                    aria-haspopup="menu"
+                    aria-expanded={accountMenuOpen}
+                    onClick={() => {
+                      setAccountMenuOpen((o) => !o);
+                      setVendorMenuOpen(false);
+                    }}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-stone-200/90 text-[#115E59] shadow-sm ring-1 ring-stone-300/70 transition hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                  >
+                    <User className="h-5 w-5" aria-hidden />
+                  </button>
+                  <div
+                    role="menu"
+                    aria-label="Account"
+                    className={`absolute right-0 z-[75] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-stone-200/70 bg-white/95 p-1.5 shadow-[0_14px_44px_-26px_rgba(20,43,60,0.36)] backdrop-blur-md transition duration-200 ${
+                      accountMenuOpen
+                        ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                        : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        void handleLogout();
+                      }}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              ) : checked ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVendorMenuOpen(false);
+                    openLoginModal();
+                  }}
+                  className="inline-flex rounded-full border border-stone-200/80 bg-white/80 px-3 py-2 text-xs font-bold text-[#115E59] shadow-sm transition hover:bg-white sm:px-3.5"
+                >
+                  Login
+                </button>
+              ) : null}
+
               <div ref={vendorMenuRef} className="relative">
                 <button
                   type="button"
                   aria-label={vendorMenuOpen ? "Close vendor menu" : "Open vendor menu"}
                   aria-haspopup="menu"
                   aria-expanded={vendorMenuOpen}
-                  onClick={() => setVendorMenuOpen((v) => !v)}
+                  onClick={() => {
+                    setVendorMenuOpen((v) => !v);
+                    setAccountMenuOpen(false);
+                  }}
                   className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
                 >
                   <MenuIcon />
@@ -228,31 +324,6 @@ export default function AppLayout({ children }) {
                     vendorMenuOpen ? "pointer-events-auto translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
                   }`}
                 >
-                  {checked && loggedIn ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setVendorMenuOpen(false);
-                        handleLogout();
-                      }}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
-                    >
-                      Log out
-                    </button>
-                  ) : (
-                    <Link
-                      href="/login"
-                      role="menuitem"
-                      onClick={() => setVendorMenuOpen(false)}
-                      className="block w-full rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
-                    >
-                      Login
-                    </Link>
-                  )}
-
-                  <div className="my-1 h-px w-full bg-stone-200/70" aria-hidden />
-
                   <Link
                     href="/vendor/login"
                     role="menuitem"

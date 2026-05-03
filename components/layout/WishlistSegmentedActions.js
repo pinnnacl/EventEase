@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCustomerAuth } from "../../context/CustomerAuthContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { readStoredEventDateLabel } from "../../lib/wishlistActions";
 
@@ -24,6 +25,7 @@ async function postWhatsAppApi(path, payload) {
 /** Wishlist CTAs — WhatsApp Cloud API (server-side templates), no wa.me redirects. */
 export default function WishlistSegmentedActions() {
   const { wishlist, count } = useWishlist();
+  const { ensureCallbackAuth } = useCustomerAuth();
   const [sending, setSending] = useState(/** @type {null | "callback" | "availability"} */ (null));
   const [notice, setNotice] = useState(/** @type {null | { type: "success" | "error"; text: string }} */ (null));
 
@@ -46,25 +48,36 @@ export default function WishlistSegmentedActions() {
     [wishlist],
   );
 
-  const handleRequestCallback = useCallback(async () => {
-    setNotice(null);
-    setSending("callback");
-    try {
-      const { res, data } = await postWhatsAppApi("/api/whatsapp/send-callback", payloadBase);
-      if (res.ok && data.ok) {
-        setNotice({ type: "success", text: data.message || "Vendors have been notified." });
-      } else {
-        setNotice({
-          type: "error",
-          text: data.error || data.message || "Could not send WhatsApp messages. Try again later.",
+  const sendCallbackWithPass = useCallback(
+    async (callbackPass) => {
+      setNotice(null);
+      setSending("callback");
+      try {
+        const { res, data } = await postWhatsAppApi("/api/whatsapp/send-callback", {
+          ...payloadBase,
+          callbackPass,
         });
+        if (res.ok && data.ok) {
+          setNotice({ type: "success", text: data.message || "Vendors have been notified." });
+        } else {
+          setNotice({
+            type: "error",
+            text: data.error || data.message || "Could not send WhatsApp messages. Try again later.",
+          });
+        }
+      } catch {
+        setNotice({ type: "error", text: "Network error. Try again." });
+      } finally {
+        setSending(null);
       }
-    } catch {
-      setNotice({ type: "error", text: "Network error. Try again." });
-    } finally {
-      setSending(null);
-    }
-  }, [payloadBase]);
+    },
+    [payloadBase],
+  );
+
+  const handleRequestCallback = useCallback(() => {
+    setNotice(null);
+    void ensureCallbackAuth((callbackPass) => sendCallbackWithPass(callbackPass));
+  }, [ensureCallbackAuth, sendCallbackWithPass]);
 
   const handleCheckAvailability = useCallback(async () => {
     setNotice(null);
