@@ -33,7 +33,6 @@ export default function PhotographyPage({ vendors = [], loadError = false }) {
           name="description"
           content="Browse approved wedding photographers on THAALI—portfolios, packages, and direct inquiries."
         />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <div className="min-h-screen w-full max-w-none">

@@ -25,7 +25,7 @@ const testimonials = [
 
 export default function TestimonialsSection() {
   return (
-    <Section id="testimonials">
+    <Section id="about">
       <SectionHeader
         title="Testimonials"
         subtitle="Loved by couples and families planning weddings across Kerala."

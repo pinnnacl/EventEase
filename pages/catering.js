@@ -10,7 +10,6 @@ export default function CateringPage() {
           name="description"
           content="Curated wedding catering across Kerala — menus, tastings, and banquet-ready service."
         />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <main className="container-default w-full max-w-none py-12 sm:py-16 lg:py-20">

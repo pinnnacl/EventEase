@@ -12,18 +12,16 @@ const FEATURED_COUNT = 6;
  *   venues: Array<Record<string, unknown>>;
  *   loadError?: boolean;
  *   loading?: boolean;
+ *   className?: string;
  * }} props
  */
-export default function VenueCardsSection({ venues = [], loadError = false, loading = false }) {
+export default function VenueCardsSection({ venues = [], loadError = false, loading = false, className = "" }) {
   const featured = venues.slice(0, FEATURED_COUNT);
 
   return (
-    <Section id="venues">
+    <Section id="featured-venues" className={`scroll-mt-24 ${className}`.trim()}>
       <div className="mx-auto w-full max-w-6xl">
-        <SectionHeader
-          title="Featured Venues"
-          subtitle="Explore elegant spaces for ceremonies, receptions, and family celebrations."
-        />
+        <SectionHeader title="Featured Venues" subtitle="Top venues curated for your event." />
 
         {loading ? (
           <VenueGridSkeleton count={FEATURED_COUNT} />
@@ -36,20 +34,39 @@ export default function VenueCardsSection({ venues = [], loadError = false, load
             No venues available yet. Check back soon.
           </p>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 lg:gap-8">
-            {featured.map((venue) => (
-              <VenueListingCard
-                key={venue.id}
-                vendor={venue}
-                href={`/venue/${venue.id}`}
-                variant="featured"
-                unavailableOnSelectedDate={Boolean(venue.unavailableOnSelectedDate)}
-              />
-            ))}
-          </div>
+          <>
+            {/* Mobile & tablet: horizontal snap scroll (below lg) */}
+            <div className="lg:hidden overflow-x-auto overflow-y-visible pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+              <ul className="mx-auto flex w-max snap-x snap-mandatory justify-center gap-6 px-0.5 py-1">
+                {featured.map((venue) => (
+                  <li key={venue.id} className="w-[min(17.5rem,calc(100vw-2.5rem))] shrink-0 snap-start sm:w-[17.5rem]">
+                    <VenueListingCard
+                      vendor={venue}
+                      href={`/venue/${venue.id}`}
+                      variant="grid"
+                      unavailableOnSelectedDate={Boolean(venue.unavailableOnSelectedDate)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Desktop (lg+): grid unchanged */}
+            <div className="hidden gap-6 lg:grid lg:grid-cols-3 lg:gap-8 xl:grid-cols-4">
+              {featured.map((venue) => (
+                <VenueListingCard
+                  key={venue.id}
+                  vendor={venue}
+                  href={`/venue/${venue.id}`}
+                  variant="featured"
+                  unavailableOnSelectedDate={Boolean(venue.unavailableOnSelectedDate)}
+                />
+              ))}
+            </div>
+          </>
         )}
 
-        <div className="mt-12 flex justify-center">
+        <div className="mt-10 flex justify-center sm:mt-12">
           <Link href="/venues">
             <Button variant="secondary" className="rounded-full px-8 py-3 text-sm">
               View all venues

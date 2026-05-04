@@ -5,6 +5,9 @@ export const CATEGORY_NAV_ITEMS = [
   { key: "makeup", label: "Makeup", href: "/makeup", iconSrc: "/nav/makeup.png" },
 ];
 
+/** Mobile header: Venues, Photography, Makeup (Home lives in bottom nav). */
+export const MOBILE_HEADER_NAV_ITEMS = CATEGORY_NAV_ITEMS.filter((i) => i.key !== "home");
+
 /**
  * @param {string} pathname
  * @param {string} [href]

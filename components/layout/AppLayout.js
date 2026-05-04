@@ -6,7 +6,9 @@ import { useCustomerAuth } from "../../context/CustomerAuthContext";
 import { useWishlist } from "../../context/WishlistContext";
 import HeaderHeart from "../HeaderHeart";
 import AiSearchExperience from "./AiSearchExperience";
-import { CATEGORY_NAV_ITEMS, isCategoryActive } from "./categoryNavConfig";
+import MobileBottomNav from "./MobileBottomNav";
+import MobileHeaderAiSearch from "./MobileHeaderAiSearch";
+import { CATEGORY_NAV_ITEMS, MOBILE_HEADER_NAV_ITEMS, isCategoryActive } from "./categoryNavConfig";
 
 /** Inline EVENTiZO logo mark + wordmark */
 function LogoEventizo({ className = "h-10 w-auto shrink-0 text-[#0B2D74]" }) {
@@ -163,195 +165,239 @@ export default function AppLayout({ children }) {
     </ul>
   );
 
+  const mobileHeaderNavList = (
+    <ul className="flex min-w-max items-stretch justify-center gap-6 px-2 text-center">
+      {MOBILE_HEADER_NAV_ITEMS.map(({ key, label, href, iconSrc }) => {
+        const active = isCategoryActive(pathname, href);
+        return (
+          <li key={key} className="shrink-0">
+            <Link
+              href={href}
+              className={`group relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1 text-slate-600 transition duration-200 ease-in-out hover:bg-stone-100/90 hover:text-[#0F766E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
+                active ? "text-[#0F766E]" : ""
+              }`}
+            >
+              <span className="relative grid h-8 w-8 place-items-center">
+                <img
+                  src={iconSrc}
+                  alt=""
+                  draggable="false"
+                  loading="lazy"
+                  className={`relative h-7 w-7 select-none object-contain transition duration-200 ${
+                    active ? "opacity-100 grayscale-0" : "opacity-80 grayscale group-hover:opacity-100 group-hover:grayscale-0"
+                  }`}
+                />
+              </span>
+              <span className="max-w-[4.5rem] text-center text-[0.6rem] font-semibold leading-tight tracking-tight">
+                {label}
+              </span>
+              <span
+                className={`pointer-events-none absolute bottom-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-brand-600 transition duration-200 ease-in-out ${
+                  active ? "opacity-100" : "opacity-0 group-hover:opacity-40"
+                }`}
+                aria-hidden
+              />
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
     <div className="flex min-h-0 w-full max-w-none flex-1 flex-col bg-background">
       <header
         ref={setHeaderEl}
         className="sticky top-0 z-[60] isolate w-full max-w-none p-0 m-0"
       >
-        {/* Clean sticky header: top bar + centered category nav */}
         <div className="w-full max-w-none border-b border-stone-200/50 bg-background">
-          <div className="relative flex items-center gap-2.5 px-container-fluid pt-2 pb-1 sm:pt-2.5 sm:pb-1.5">
-            <Link
-              href="/"
-              className="group flex min-w-0 items-center rounded-lg outline-none ring-brand-500/30 transition duration-200 hover:bg-stone-100/80 focus-visible:ring-2 focus-visible:ring-offset-2"
-            >
-              <LogoEventizo className="h-10 w-auto shrink-0 text-[#0B2D74] transition-opacity duration-200 group-hover:opacity-90 sm:h-11" />
-            </Link>
-
-            {/* Desktop: nav centered in header row */}
-            <div className="hidden min-w-0 flex-1 justify-center md:flex">
+          {/* Mobile & small tablet: nav + optional AI (home); no logo, wishlist, account, vendor menu */}
+          <div className="lg:hidden">
+            <div className="px-container-fluid pt-1.5 pb-1">
               <nav
-                className="overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="flex justify-center overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 aria-label="Services"
               >
-                {navList}
+                {mobileHeaderNavList}
               </nav>
             </div>
+            {isHome ? <MobileHeaderAiSearch /> : null}
+          </div>
 
-            <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {/* Desktop (lg+): unchanged — logo, full nav, wishlist, account, vendor menu */}
+          <div className="hidden lg:block">
+            <div className="relative flex items-center gap-2.5 px-container-fluid pt-2 pb-1 sm:pt-2.5 sm:pb-1.5">
               <Link
-                href="/wishlist"
-                aria-label={wishlistCount > 0 ? `Wishlist, ${wishlistCount} saved items` : "Wishlist"}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                href="/"
+                className="group flex min-w-0 items-center rounded-lg outline-none ring-brand-500/30 transition duration-200 hover:bg-stone-100/80 focus-visible:ring-2 focus-visible:ring-offset-2"
               >
-                <HeaderHeart active={wishlistCount > 0} className="h-5 w-5" />
-                {wishlistCount > 0 ? (
-                  <span className="absolute right-0.5 top-0.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[0.65rem] font-bold tabular-nums leading-none text-white ring-2 ring-white">
-                    {wishlistCount > 99 ? "99+" : wishlistCount}
-                  </span>
-                ) : null}
+                <LogoEventizo className="h-10 w-auto shrink-0 text-[#0B2D74] transition-opacity duration-200 group-hover:opacity-90 sm:h-11" />
               </Link>
 
-              {checked && customer ? (
-                <div ref={accountMenuRef} className="relative">
+              <div className="flex min-w-0 flex-1 justify-center">
+                <nav
+                  className="overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  aria-label="Services"
+                >
+                  {navList}
+                </nav>
+              </div>
+
+              <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+                <Link
+                  href="/wishlist"
+                  aria-label={wishlistCount > 0 ? `Wishlist, ${wishlistCount} saved items` : "Wishlist"}
+                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                >
+                  <HeaderHeart active={wishlistCount > 0} className="h-5 w-5" />
+                  {wishlistCount > 0 ? (
+                    <span className="absolute right-0.5 top-0.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[0.65rem] font-bold tabular-nums leading-none text-white ring-2 ring-white">
+                      {wishlistCount > 99 ? "99+" : wishlistCount}
+                    </span>
+                  ) : null}
+                </Link>
+
+                {checked && customer ? (
+                  <div ref={accountMenuRef} className="relative">
+                    <button
+                      type="button"
+                      aria-label="Account menu"
+                      aria-haspopup="menu"
+                      aria-expanded={accountMenuOpen}
+                      onClick={() => {
+                        setAccountMenuOpen((o) => !o);
+                        setVendorMenuOpen(false);
+                      }}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#0F766E] to-[#0a5c56] text-sm font-bold uppercase text-white shadow-md ring-2 ring-white/90 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                    >
+                      {(customer.name || "").trim() ? (
+                        (customer.name || "").trim().charAt(0)
+                      ) : (
+                        <User className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+                      )}
+                    </button>
+                    <div
+                      role="menu"
+                      aria-label="Account"
+                      className={`absolute right-0 z-[75] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-stone-200/70 bg-white/95 p-1.5 shadow-[0_14px_44px_-26px_rgba(20,43,60,0.36)] backdrop-blur-md transition duration-200 ${
+                        accountMenuOpen
+                          ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                          : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
+                      }`}
+                    >
+                      <Link
+                        href="/account"
+                        role="menuitem"
+                        onClick={() => setAccountMenuOpen(false)}
+                        className="block w-full rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                      >
+                        View Profile
+                      </Link>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          void handleLogout();
+                        }}
+                        className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                ) : checked && legacyLogin ? (
+                  <div ref={accountMenuRef} className="relative">
+                    <button
+                      type="button"
+                      aria-label="Account menu"
+                      aria-haspopup="menu"
+                      aria-expanded={accountMenuOpen}
+                      onClick={() => {
+                        setAccountMenuOpen((o) => !o);
+                        setVendorMenuOpen(false);
+                      }}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-stone-200/90 text-[#115E59] shadow-sm ring-1 ring-stone-300/70 transition hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                    >
+                      <User className="h-5 w-5" aria-hidden />
+                    </button>
+                    <div
+                      role="menu"
+                      aria-label="Account"
+                      className={`absolute right-0 z-[75] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-stone-200/70 bg-white/95 p-1.5 shadow-[0_14px_44px_-26px_rgba(20,43,60,0.36)] backdrop-blur-md transition duration-200 ${
+                        accountMenuOpen
+                          ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                          : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          void handleLogout();
+                        }}
+                        className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                ) : checked ? (
                   <button
                     type="button"
-                    aria-label="Account menu"
-                    aria-haspopup="menu"
-                    aria-expanded={accountMenuOpen}
                     onClick={() => {
-                      setAccountMenuOpen((o) => !o);
                       setVendorMenuOpen(false);
+                      openLoginModal();
                     }}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#0F766E] to-[#0a5c56] text-sm font-bold uppercase text-white shadow-md ring-2 ring-white/90 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                    className="inline-flex rounded-full border border-stone-200/80 bg-white/80 px-3 py-2 text-xs font-bold text-[#115E59] shadow-sm transition hover:bg-white sm:px-3.5"
                   >
-                    {(customer.name || "").trim() ? (
-                      (customer.name || "").trim().charAt(0)
-                    ) : (
-                      <User className="h-5 w-5" strokeWidth={2.25} aria-hidden />
-                    )}
+                    Login
                   </button>
+                ) : null}
+
+                <div ref={vendorMenuRef} className="relative">
+                  <button
+                    type="button"
+                    aria-label={vendorMenuOpen ? "Close vendor menu" : "Open vendor menu"}
+                    aria-haspopup="menu"
+                    aria-expanded={vendorMenuOpen}
+                    onClick={() => {
+                      setVendorMenuOpen((v) => !v);
+                      setAccountMenuOpen(false);
+                    }}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                  >
+                    <MenuIcon />
+                  </button>
+
                   <div
                     role="menu"
-                    aria-label="Account"
-                    className={`absolute right-0 z-[75] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-stone-200/70 bg-white/95 p-1.5 shadow-[0_14px_44px_-26px_rgba(20,43,60,0.36)] backdrop-blur-md transition duration-200 ${
-                      accountMenuOpen
-                        ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                        : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
+                    aria-label="Vendor menu"
+                    className={`absolute right-0 z-[70] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-stone-200/70 bg-white/95 p-1.5 shadow-[0_14px_44px_-26px_rgba(20,43,60,0.36)] backdrop-blur-md transition duration-200 ${
+                      vendorMenuOpen ? "pointer-events-auto translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
                     }`}
                   >
                     <Link
-                      href="/account"
+                      href="/vendor/login"
                       role="menuitem"
-                      onClick={() => setAccountMenuOpen(false)}
+                      onClick={() => setVendorMenuOpen(false)}
                       className="block w-full rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
                     >
-                      View Profile
+                      Vendor Login
                     </Link>
-                    <button
-                      type="button"
+                    <Link
+                      href="/vendor/signup"
                       role="menuitem"
-                      onClick={() => {
-                        setAccountMenuOpen(false);
-                        void handleLogout();
-                      }}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
+                      onClick={() => setVendorMenuOpen(false)}
+                      className="block w-full rounded-lg px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
                     >
-                      Logout
-                    </button>
+                      Help / Learn more
+                    </Link>
                   </div>
-                </div>
-              ) : checked && legacyLogin ? (
-                <div ref={accountMenuRef} className="relative">
-                  <button
-                    type="button"
-                    aria-label="Account menu"
-                    aria-haspopup="menu"
-                    aria-expanded={accountMenuOpen}
-                    onClick={() => {
-                      setAccountMenuOpen((o) => !o);
-                      setVendorMenuOpen(false);
-                    }}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-stone-200/90 text-[#115E59] shadow-sm ring-1 ring-stone-300/70 transition hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
-                  >
-                    <User className="h-5 w-5" aria-hidden />
-                  </button>
-                  <div
-                    role="menu"
-                    aria-label="Account"
-                    className={`absolute right-0 z-[75] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-stone-200/70 bg-white/95 p-1.5 shadow-[0_14px_44px_-26px_rgba(20,43,60,0.36)] backdrop-blur-md transition duration-200 ${
-                      accountMenuOpen
-                        ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                        : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setAccountMenuOpen(false);
-                        void handleLogout();
-                      }}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              ) : checked ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setVendorMenuOpen(false);
-                    openLoginModal();
-                  }}
-                  className="inline-flex rounded-full border border-stone-200/80 bg-white/80 px-3 py-2 text-xs font-bold text-[#115E59] shadow-sm transition hover:bg-white sm:px-3.5"
-                >
-                  Login
-                </button>
-              ) : null}
-
-              <div ref={vendorMenuRef} className="relative">
-                <button
-                  type="button"
-                  aria-label={vendorMenuOpen ? "Close vendor menu" : "Open vendor menu"}
-                  aria-haspopup="menu"
-                  aria-expanded={vendorMenuOpen}
-                  onClick={() => {
-                    setVendorMenuOpen((v) => !v);
-                    setAccountMenuOpen(false);
-                  }}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
-                >
-                  <MenuIcon />
-                </button>
-
-                <div
-                  role="menu"
-                  aria-label="Vendor menu"
-                  className={`absolute right-0 z-[70] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-stone-200/70 bg-white/95 p-1.5 shadow-[0_14px_44px_-26px_rgba(20,43,60,0.36)] backdrop-blur-md transition duration-200 ${
-                    vendorMenuOpen ? "pointer-events-auto translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
-                  }`}
-                >
-                  <Link
-                    href="/vendor/login"
-                    role="menuitem"
-                    onClick={() => setVendorMenuOpen(false)}
-                    className="block w-full rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
-                  >
-                    Vendor Login
-                  </Link>
-                  <Link
-                    href="/vendor/signup"
-                    role="menuitem"
-                    onClick={() => setVendorMenuOpen(false)}
-                    className="block w-full rounded-lg px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2"
-                  >
-                    Help / Learn more
-                  </Link>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="px-container-fluid pb-2 sm:pb-2.5">
-            <nav
-              className="overflow-x-auto overscroll-x-contain pt-0 pb-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:hidden"
-              aria-label="Services"
-            >
-              {navList}
-            </nav>
           </div>
         </div>
       </header>
@@ -360,9 +406,15 @@ export default function AppLayout({ children }) {
         <AiSearchExperience headerEl={headerEl} />
       )}
 
-      <div className={`w-full min-w-0 flex-1 flex flex-col ${isHome ? "pt-10 sm:pt-12 lg:pt-16" : ""}`}>
+      <div
+        className={`flex min-w-0 w-full flex-1 flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0 ${
+          isHome ? "pt-2 sm:pt-4 lg:pt-16" : ""
+        }`}
+      >
         {children}
       </div>
+
+      <MobileBottomNav />
     </div>
   );
 }

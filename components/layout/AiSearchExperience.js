@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useWishlist } from "../../context/WishlistContext";
+import { useHomeAiSearch } from "../../context/HomeAiSearchContext";
 import SearchSuggestions from "./SearchSuggestions";
 import WishlistSegmentedActions from "./WishlistSegmentedActions";
 import {
@@ -59,7 +59,8 @@ function AiSearchHeroBar({ value, onChange, onSubmit, loading = false, inputRef 
           </span>
 
           <input
-            ref={inputRef}
+            id="home-ai-desktop-search-input"
+            ref={inputRef || undefined}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
@@ -96,6 +97,125 @@ function aiResultHref(vendor) {
   if (category === "Makeup") return `/makeup/${vendor.id}`;
   if (category === "Venue") return `/venue/${vendor.id}`;
   return `/venue/${vendor.id}`;
+}
+
+/**
+ * @param {{ plan: Record<string, unknown> | null }} props
+ */
+function AiWeddingPlanPanel({ plan }) {
+  if (!plan || typeof plan !== "object") return null;
+  const overview = typeof plan.overview === "string" ? plan.overview : "";
+  const byCat = plan.recommended_vendors_by_category;
+  const budget = plan.estimated_budget_split;
+  const timeline = Array.isArray(plan.timeline) ? plan.timeline : [];
+  const checklist = Array.isArray(plan.checklist) ? plan.checklist : [];
+
+  const catEntries =
+    byCat && typeof byCat === "object"
+      ? Object.entries(/** @type {Record<string, unknown>} */ (byCat)).filter(([, v]) => Array.isArray(v) && v.length > 0)
+      : [];
+
+  const budgetEntries =
+    budget && typeof budget === "object"
+      ? Object.entries(/** @type {Record<string, unknown>} */ (budget)).filter(([, v]) => v != null && v !== "")
+      : [];
+
+  return (
+    <div className="mt-5 space-y-4 rounded-2xl border border-[#0F766E]/20 bg-gradient-to-b from-teal-50/80 to-white p-4 shadow-sm sm:p-5">
+      <h2 className="text-base font-bold tracking-tight text-[#0F172A] sm:text-lg">Your wedding plan</h2>
+      {overview ? (
+        <section>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Overview</h3>
+          <p className="mt-1.5 text-sm leading-relaxed text-slate-800 sm:text-[0.9375rem]">{overview}</p>
+        </section>
+      ) : null}
+
+      {catEntries.length > 0 ? (
+        <section>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Recommended vendors</h3>
+          <ul className="mt-2 space-y-3">
+            {catEntries.map(([cat, rows]) => (
+              <li key={cat}>
+                <p className="text-sm font-semibold text-[#0F766E]">{cat}</p>
+                <ul className="mt-1 space-y-1.5 pl-0.5">
+                  {(Array.isArray(rows) ? rows : []).map((item, i) => {
+                    const row = item && typeof item === "object" ? item : {};
+                    const name = String(row.businessName || row.name || "").trim() || "Vendor";
+                    const note = String(row.note || "").trim();
+                    return (
+                      <li key={`${cat}-${i}`} className="text-sm text-slate-700">
+                        <span className="font-medium text-slate-900">{name}</span>
+                        {note ? <span className="text-slate-600"> — {note}</span> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {budgetEntries.length > 0 ? (
+        <section>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Estimated budget split</h3>
+          <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            {budgetEntries.map(([label, amt]) => (
+              <li key={label} className="flex justify-between gap-3 rounded-lg border border-stone-200/80 bg-white px-3 py-2 text-sm">
+                <span className="text-slate-600">{label}</span>
+                <span className="font-semibold tabular-nums text-slate-900">
+                  {typeof amt === "number" ? `₹${amt.toLocaleString("en-IN")}` : String(amt)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {timeline.length > 0 ? (
+        <section>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Timeline</h3>
+          <ul className="mt-2 space-y-2">
+            {timeline.map((entry, i) => {
+              const e = entry && typeof entry === "object" ? entry : {};
+              const phase = String(e.phase || e.title || `Step ${i + 1}`);
+              const when = String(e.when || "").trim();
+              const tasks = Array.isArray(e.tasks) ? e.tasks : [];
+              return (
+                <li key={i} className="rounded-lg border border-stone-200/80 bg-white px-3 py-2 text-sm">
+                  <p className="font-semibold text-slate-900">{phase}</p>
+                  {when ? <p className="text-xs text-slate-500">{when}</p> : null}
+                  {tasks.length > 0 ? (
+                    <ul className="mt-1 list-inside list-disc text-slate-700">
+                      {tasks.map((t, j) => (
+                        <li key={j}>{String(t)}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
+      {checklist.length > 0 ? (
+        <section>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Checklist</h3>
+          <ul className="mt-2 space-y-1.5">
+            {checklist.map((item, i) => (
+              <li key={i} className="flex gap-2 text-sm text-slate-800">
+                <span className="mt-0.5 text-[#0F766E]" aria-hidden>
+                  ✓
+                </span>
+                <span>{String(item)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </div>
+  );
 }
 
 function AiVendorResultTile({ row, idx }) {
@@ -205,11 +325,11 @@ function StickySegmentedSearch() {
 
   return (
     <div
-      className={`mx-auto w-full max-w-[min(26rem,calc(100vw-2rem))] origin-top transition-transform ${TRANSITION} md:max-w-[min(32rem,36vw)]`}
+      className={`mx-auto w-full max-w-[min(26rem,calc(100vw-2rem))] origin-top transition-transform ${TRANSITION} lg:max-w-[min(32rem,36vw)]`}
     >
-      {/* Mobile: single-line search bar */}
+      {/* Mobile / tablet: single-line search bar */}
       <div
-        className={`flex md:hidden ${TRANSITION} h-10 min-h-10 items-center overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md`}
+        className={`flex lg:hidden ${TRANSITION} h-10 min-h-10 items-center overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md`}
         role="search"
       >
         <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-0 transition-colors hover:bg-neutral-100/90 focus-within:bg-neutral-100/80 focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#0F766E]/12">
@@ -230,10 +350,10 @@ function StickySegmentedSearch() {
         </div>
       </div>
 
-      {/* Desktop: segmented Airbnb-style bar */}
+      {/* Desktop (lg+): segmented Airbnb-style bar */}
       <div
         role="search"
-        className={`hidden h-11 min-h-11 min-w-0 items-stretch overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md transition-shadow md:flex md:h-12 md:min-h-12 ${TRANSITION} hover:shadow-lg`}
+        className={`hidden h-11 min-h-11 min-w-0 items-stretch overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md transition-shadow lg:flex lg:h-12 lg:min-h-12 ${TRANSITION} hover:shadow-lg`}
       >
         <div className="flex min-h-0 min-w-0 flex-1 items-stretch">
           <label className={`${segmentDesktop} min-w-0 flex-1 rounded-l-full`}>
@@ -291,55 +411,9 @@ export default function AiSearchExperience({ headerEl }) {
   const isHome = router.pathname === "/";
   const isWishlist = router.pathname === "/wishlist";
   const { count: wishlistCount } = useWishlist();
+  const homeAi = useHomeAiSearch();
 
   const [headerH, setHeaderH] = useState(0);
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [aiResults, setAiResults] = useState([]);
-  const [aiAnswer, setAiAnswer] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState("");
-  const [aiSearched, setAiSearched] = useState(false);
-  const aiInputRef = useRef(null);
-
-  const handleSuggestionSelect = useCallback((text) => {
-    setAiPrompt(text);
-    requestAnimationFrame(() => {
-      aiInputRef.current?.focus();
-      aiInputRef.current?.setSelectionRange(text.length, text.length);
-    });
-  }, []);
-
-  const runAiSearch = useCallback(async () => {
-    const q = aiPrompt.trim();
-    if (!q || aiLoading) return;
-    setAiLoading(true);
-    setAiError("");
-    setAiAnswer("");
-    setAiSearched(true);
-    try {
-      const res = await fetch("/api/ai/search/text", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ query: q, limit: 6 }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) {
-        setAiResults([]);
-        setAiAnswer("");
-        setAiError(data?.error || "Could not run AI search right now.");
-        return;
-      }
-      setAiResults(Array.isArray(data.results) ? data.results : []);
-      setAiAnswer(typeof data.answer === "string" ? data.answer : "");
-    } catch {
-      setAiResults([]);
-      setAiAnswer("");
-      setAiError("Network error while running AI search.");
-    } finally {
-      setAiLoading(false);
-    }
-  }, [aiPrompt, aiLoading]);
 
   const barTopGap = isHome ? BAR_TOP_GAP_PX : BAR_TOP_GAP_NON_HOME_PX;
   const stickyBarTopPx = headerH ? headerH + barTopGap : barTopGap;
@@ -375,16 +449,35 @@ export default function AiSearchExperience({ headerEl }) {
     );
   }
 
+  if (!homeAi) {
+    return null;
+  }
+
+  const {
+    aiPrompt,
+    setAiPrompt,
+    runAiSearch,
+    aiLoading,
+    aiResults,
+    aiAnswer,
+    aiPlan,
+    aiError,
+    aiSearched,
+    handleSuggestionSelect,
+    aiInputRef,
+  } = homeAi;
+
   return (
     <>
       <section className="w-full border-0 bg-transparent shadow-none">
         <div className={`grid transition-[grid-template-rows] ${TRANSITION} grid-rows-[1fr]`}>
           <div className="min-h-0 overflow-hidden">
-            <div className={`px-container-fluid transition ${TRANSITION} translate-y-0 pt-16 pb-10 opacity-100 sm:pt-20 sm:pb-12`}>
-              <div
-                className={`mx-auto w-full max-w-4xl transition ${TRANSITION} will-change-transform scale-100`}
-              >
-                <div className="mx-auto mb-6 max-w-3xl text-center sm:mb-7">
+            <div
+              className={`px-container-fluid transition ${TRANSITION} translate-y-0 pb-6 pt-0 opacity-100 sm:pb-8 lg:pt-16 lg:pb-12`}
+            >
+              <div className={`mx-auto w-full max-w-4xl transition ${TRANSITION} will-change-transform scale-100`}>
+                {/* Desktop only: hero copy + in-flow AI bar (mobile uses header AI strip) */}
+                <div className="mx-auto mb-6 hidden max-w-3xl text-center lg:mb-7 lg:block">
                   <h1 className="font-sans text-3xl font-semibold leading-tight tracking-tight text-[#0F172A] sm:text-4xl">
                     Plan your dream wedding with AI
                   </h1>
@@ -392,18 +485,21 @@ export default function AiSearchExperience({ headerEl }) {
                     Tell us your style, date, and budget — we’ll curate venues and services that fit.
                   </p>
                 </div>
-                <div>
+                <div className="hidden lg:block">
                   <AiSearchHeroBar
                     value={aiPrompt}
                     onChange={setAiPrompt}
                     onSubmit={runAiSearch}
                     loading={aiLoading}
-                    inputRef={aiInputRef}
+                    inputRef={null}
                   />
                 </div>
-                <SearchSuggestions onSelect={handleSuggestionSelect} />
+                {/* Quick suggestion chips: desktop only (mobile keeps focus on header AI bar + CTA) */}
+                <div className="mt-4 hidden lg:block">
+                  <SearchSuggestions onSelect={handleSuggestionSelect} />
+                </div>
                 {aiSearched ? (
-                  <div className="mt-5">
+                  <div className="mt-4 lg:mt-5">
                     {aiError ? (
                       <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">
                         {aiError}
@@ -418,6 +514,7 @@ export default function AiSearchExperience({ headerEl }) {
                       </p>
                     ) : (
                       <div className="space-y-3">
+                        {aiPlan ? <AiWeddingPlanPanel plan={aiPlan} /> : null}
                         {aiAnswer ? (
                           <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
                             {aiAnswer}
@@ -437,8 +534,6 @@ export default function AiSearchExperience({ headerEl }) {
           </div>
         </div>
       </section>
-
-      {/* Home page: segmented sticky action bar removed by request. */}
     </>
   );
 }

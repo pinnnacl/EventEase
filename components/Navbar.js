@@ -8,7 +8,7 @@ import HeaderHeart from "./HeaderHeart";
 const links = [
   { label: "Venues", href: "/venues" },
   { label: "Services", href: "dropdown" },
-  { label: "Packages", href: "/#packages" },
+  { label: "Featured venues", href: "/#featured-venues" },
   { label: "About Us", href: "/#about" },
 ];
 

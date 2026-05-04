@@ -7,7 +7,6 @@ export default function DecorationPage() {
       <Head>
         <title>Decoration | THAALI</title>
         <meta name="description" content="Floral, stage, and lighting design for Kerala weddings." />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <main className="container-default w-full max-w-none py-12 sm:py-16 lg:py-20">

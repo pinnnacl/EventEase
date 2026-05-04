@@ -1,7 +1,4 @@
 import Head from "next/head";
-import HowItWorksSection from "../components/HowItWorksSection";
-import WeddingPackagesSection from "../components/WeddingPackagesSection";
-import WhyChooseUsSection from "../components/WhyChooseUsSection";
 import VenueCardsSection from "../components/VenueCardsSection";
 import TestimonialsSection from "../components/TestimonialsSection";
 import Footer from "../components/Footer";
@@ -14,17 +11,13 @@ export default function HomePage({ featuredVenues = [], loadError = false }) {
         <title>THAALI | Premium Wedding Planning</title>
         <meta
           name="description"
-          content="Plan your dream Kerala wedding effortlessly with curated venues, services, and premium wedding packages."
+          content="Plan your dream Kerala wedding effortlessly with curated venues, services, and featured spaces across Kerala."
         />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <div className="min-h-screen w-full max-w-none">
         <main className="w-full max-w-none">
-          <HowItWorksSection />
-          <WeddingPackagesSection />
-          <WhyChooseUsSection />
-          <VenueCardsSection venues={featuredVenues} loadError={loadError} />
+          <VenueCardsSection venues={featuredVenues} loadError={loadError} className="mt-6" />
           <TestimonialsSection />
         </main>
         <Footer variant="light" />

@@ -39,7 +39,6 @@ export default function LoginPage() {
     <>
       <Head>
         <title>Sign in | THAALI</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <div className="min-h-screen w-full max-w-none">

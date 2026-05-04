@@ -8,7 +8,6 @@ export default function WishlistRoute() {
       <Head>
         <title>Your wishlist | THAALI</title>
         <meta name="description" content="Venues, photography, and services you have saved on THAALI." />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <div className="flex min-h-0 w-full max-w-none flex-1 flex-col">

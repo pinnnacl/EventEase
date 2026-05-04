@@ -39,7 +39,6 @@ export default function VenuesPage({ vendors = [], selectedDate = null, loadErro
           name="description"
           content="Browse curated wedding venues across Kerala—capacities, packages, and amenities in one place."
         />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <div className="min-h-screen w-full max-w-none">

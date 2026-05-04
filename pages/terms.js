@@ -6,7 +6,6 @@ export default function TermsPage() {
     <>
       <Head>
         <title>Terms of Use | EVENTiZO</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <main className="mx-auto max-w-2xl px-4 py-10 sm:py-14">
         <h1 className="text-2xl font-bold text-stone-900">Terms of Use</h1>

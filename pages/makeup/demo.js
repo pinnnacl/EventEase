@@ -11,7 +11,6 @@ function MakeupDemoPage() {
           name="description"
           content="Velvet & Gilded — premium bridal makeup artist profile demo. Sample content only."
         />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="robots" content="noindex,nofollow" />
       </Head>
       <MakeupProfileView vendor={getDemoMakeupVendor()} demo />

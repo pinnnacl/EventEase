@@ -21,7 +21,6 @@ export default function AccountPage() {
     <>
       <Head>
         <title>Your profile | EVENTiZO</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <main className="mx-auto max-w-lg px-4 py-10 sm:py-14">
         <h1 className="text-2xl font-bold text-stone-900">Your profile</h1>
