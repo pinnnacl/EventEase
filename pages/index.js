@@ -1,6 +1,5 @@
 import Head from "next/head";
 import VenueCardsSection from "../components/VenueCardsSection";
-import TestimonialsSection from "../components/TestimonialsSection";
 import Footer from "../components/Footer";
 import { loadApprovedVenuesForListing } from "../lib/venueListServer";
 
@@ -17,8 +16,7 @@ export default function HomePage({ featuredVenues = [], loadError = false }) {
 
       <div className="min-h-screen w-full max-w-none">
         <main className="w-full max-w-none">
-          <VenueCardsSection venues={featuredVenues} loadError={loadError} className="mt-6" />
-          <TestimonialsSection />
+          <VenueCardsSection venues={featuredVenues} loadError={loadError} className="mt-2 lg:mt-6" />
         </main>
         <Footer variant="light" />
       </div>

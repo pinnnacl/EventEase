@@ -131,7 +131,7 @@ export default function AppLayout({ children }) {
           <li key={key} className="shrink-0">
             <Link
               href={href}
-              className={`group relative flex flex-col items-center justify-center gap-1 rounded-lg px-1.5 py-1 text-slate-600 transition duration-200 ease-in-out hover:-translate-y-0.5 hover:text-[#0F766E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
+              className={`group relative flex flex-col items-center justify-center gap-0 rounded-lg px-1.5 py-1 text-slate-600 transition duration-200 ease-in-out hover:-translate-y-0.5 hover:text-[#0F766E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
                 active ? "text-[#0F766E]" : ""
               }`}
             >
@@ -141,14 +141,10 @@ export default function AppLayout({ children }) {
                   alt=""
                   draggable="false"
                   loading="lazy"
-                  className={`relative h-7 w-7 select-none object-contain transition duration-200 sm:h-8 sm:w-8 ${
-                    active
-                      ? "opacity-100 grayscale-0"
-                      : "opacity-75 grayscale group-hover:opacity-100 group-hover:grayscale-0"
-                  }`}
+                  className="relative h-[3.125rem] w-[3.125rem] select-none object-contain opacity-100 [filter:none] sm:h-[3.375rem] sm:w-[3.375rem]"
                 />
               </span>
-              <span className="text-center text-[0.625rem] font-semibold leading-tight tracking-tight sm:text-[0.6875rem]">
+              <span className="-mt-1 text-center text-[0.625rem] font-semibold leading-tight tracking-tight sm:text-[0.6875rem]">
                 {label}
               </span>
               <span className="pointer-events-none absolute -bottom-1 left-1/2 h-0.5 w-10 -translate-x-1/2 rounded-full bg-brand-600 opacity-0 transition duration-200 ease-in-out group-hover:opacity-40" />
@@ -166,29 +162,27 @@ export default function AppLayout({ children }) {
   );
 
   const mobileHeaderNavList = (
-    <ul className="flex min-w-max items-stretch justify-center gap-6 px-2 text-center">
+    <ul className="flex min-w-max items-stretch justify-center gap-4 px-2 text-center">
       {MOBILE_HEADER_NAV_ITEMS.map(({ key, label, href, iconSrc }) => {
         const active = isCategoryActive(pathname, href);
         return (
           <li key={key} className="shrink-0">
             <Link
               href={href}
-              className={`group relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1 text-slate-600 transition duration-200 ease-in-out hover:bg-stone-100/90 hover:text-[#0F766E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
+              className={`group relative flex min-h-[52px] min-w-[68px] flex-col items-center justify-center gap-0 rounded-xl px-2.5 py-0.5 text-slate-600 transition duration-200 ease-in-out hover:bg-stone-100/90 hover:text-[#0F766E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
                 active ? "text-[#0F766E]" : ""
               }`}
             >
-              <span className="relative grid h-8 w-8 place-items-center">
+              <span className="relative grid place-items-center">
                 <img
                   src={iconSrc}
                   alt=""
                   draggable="false"
                   loading="lazy"
-                  className={`relative h-7 w-7 select-none object-contain transition duration-200 ${
-                    active ? "opacity-100 grayscale-0" : "opacity-80 grayscale group-hover:opacity-100 group-hover:grayscale-0"
-                  }`}
+                  className="relative h-[3.375rem] w-[3.375rem] select-none object-contain opacity-100 [filter:none]"
                 />
               </span>
-              <span className="max-w-[4.5rem] text-center text-[0.6rem] font-semibold leading-tight tracking-tight">
+              <span className="-mt-1 max-w-[5.25rem] text-center text-[0.65rem] font-semibold leading-tight tracking-tight">
                 {label}
               </span>
               <span
@@ -408,7 +402,7 @@ export default function AppLayout({ children }) {
 
       <div
         className={`flex min-w-0 w-full flex-1 flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0 ${
-          isHome ? "pt-2 sm:pt-4 lg:pt-16" : ""
+          isHome ? "pt-0 sm:pt-3 lg:pt-16" : ""
         }`}
       >
         {children}

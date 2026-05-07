@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Button from "./Button";
 import Section from "./Section";
-import SectionHeader from "./SectionHeader";
 import VenueGridSkeleton from "./venues/VenueGridSkeleton";
 import VenueListingCard from "./venues/VenueListingCard";
 
@@ -20,8 +19,12 @@ export default function VenueCardsSection({ venues = [], loadError = false, load
 
   return (
     <Section id="featured-venues" className={`scroll-mt-24 ${className}`.trim()}>
-      <div className="mx-auto w-full max-w-6xl">
-        <SectionHeader title="Featured Venues" subtitle="Top venues curated for your event." />
+      <div className="mx-auto w-full max-w-6xl px-4 lg:px-0">
+        <div className="mb-5 w-full text-left sm:mb-6 lg:mb-10 lg:text-center">
+          <h2 className="text-2xl font-semibold tracking-tight text-wedding-ink sm:text-[1.7rem] lg:text-fluid-section-title lg:font-bold">
+            Featured Venues
+          </h2>
+        </div>
 
         {loading ? (
           <VenueGridSkeleton count={FEATURED_COUNT} />
@@ -37,9 +40,9 @@ export default function VenueCardsSection({ venues = [], loadError = false, load
           <>
             {/* Mobile & tablet: horizontal snap scroll (below lg) */}
             <div className="lg:hidden overflow-x-auto overflow-y-visible pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
-              <ul className="mx-auto flex w-max snap-x snap-mandatory justify-center gap-6 px-0.5 py-1">
+              <ul className="flex w-max snap-x snap-mandatory justify-start gap-5 px-0 py-1">
                 {featured.map((venue) => (
-                  <li key={venue.id} className="w-[min(17.5rem,calc(100vw-2.5rem))] shrink-0 snap-start sm:w-[17.5rem]">
+                  <li key={venue.id} className="w-[min(17.5rem,calc(100vw-2rem))] shrink-0 snap-start sm:w-[17.5rem]">
                     <VenueListingCard
                       vendor={venue}
                       href={`/venue/${venue.id}`}

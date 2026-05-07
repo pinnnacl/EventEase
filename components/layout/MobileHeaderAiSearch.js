@@ -1,7 +1,28 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useHomeAiSearch } from "../../context/HomeAiSearchContext";
 
 const SCROLL_HIDE_AFTER = 56;
+const MOBILE_LOCATION_OPTIONS = ["Kochi"];
+
+function SearchIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+    </svg>
+  );
+}
+
+function LocationIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 21s-6-4.9-6-10a6 6 0 1112 0c0 5.1-6 10-6 10zm0-8.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"
+      />
+    </svg>
+  );
+}
 
 /**
  * Compact AI bar for mobile home header; hides when user scrolls down.
@@ -9,6 +30,9 @@ const SCROLL_HIDE_AFTER = 56;
 export default function MobileHeaderAiSearch() {
   const ctx = useHomeAiSearch();
   const [scrolledDown, setScrolledDown] = useState(false);
+  const [locationMenuOpen, setLocationMenuOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const locationMenuRef = useRef(null);
 
   const onScroll = useCallback(() => {
     setScrolledDown(typeof window !== "undefined" && window.scrollY > SCROLL_HIDE_AFTER);
@@ -20,14 +44,31 @@ export default function MobileHeaderAiSearch() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [onScroll]);
 
+  useEffect(() => {
+    if (!locationMenuOpen) return;
+    function onPointerDown(e) {
+      const el = locationMenuRef.current;
+      if (el && !el.contains(e.target)) setLocationMenuOpen(false);
+    }
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, [locationMenuOpen]);
+
   if (!ctx) return null;
 
   const { aiPrompt, setAiPrompt, runAiSearch, aiLoading, aiInputRef } = ctx;
+  const pickLocation = (city) => {
+    setSelectedLocation(city);
+    setAiPrompt(city);
+    setLocationMenuOpen(false);
+  };
 
   return (
     <div
-      className={`overflow-hidden border-t border-stone-200/40 bg-stone-50/90 transition-[max-height,opacity,padding] duration-300 ease-out ${
-        scrolledDown ? "pointer-events-none max-h-0 border-t-transparent py-0 opacity-0" : "max-h-[5.5rem] py-2 opacity-100"
+      className={`border-t border-stone-200/40 bg-stone-50/90 transition-[max-height,opacity,padding] duration-300 ease-out ${
+        scrolledDown
+          ? "pointer-events-none max-h-0 overflow-hidden border-t-transparent py-0 opacity-0"
+          : "max-h-[7.5rem] overflow-visible py-2 opacity-100"
       }`}
       aria-hidden={scrolledDown ? "true" : "false"}
     >
@@ -43,18 +84,55 @@ export default function MobileHeaderAiSearch() {
                 void runAiSearch();
               }
             }}
-            placeholder="Ask AI to plan your wedding…"
-            className="min-h-[44px] min-w-0 flex-1 border-0 bg-transparent py-2 pl-1 text-[0.8125rem] font-medium text-slate-900 outline-none placeholder:text-slate-500 focus:ring-0"
+            placeholder="Search smarter with AI"
+            className="min-h-[44px] min-w-0 flex-[1_1_0%] border-0 bg-transparent py-2 pl-1 text-[0.8125rem] font-medium text-slate-900 outline-none placeholder:text-slate-500 focus:ring-0"
             aria-label="AI wedding search"
           />
+          <div ref={locationMenuRef} className="relative shrink-0">
+            <button
+              type="button"
+              aria-label="Choose location"
+              aria-haspopup="menu"
+              aria-expanded={locationMenuOpen}
+              onClick={() => setLocationMenuOpen((v) => !v)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#0F766E]/18 bg-[#0F766E]/8 text-[#0F766E] shadow-sm transition active:scale-[0.98]"
+            >
+              <LocationIcon className="h-4 w-4" />
+            </button>
+            <div
+              role="menu"
+              aria-label="Location options"
+              className={`absolute right-0 top-[calc(100%+0.45rem)] z-30 min-w-[8.25rem] rounded-xl border border-stone-200/80 bg-white p-1.5 shadow-[0_10px_24px_-16px_rgba(15,23,42,0.35)] transition ${
+                locationMenuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+              }`}
+            >
+              {MOBILE_LOCATION_OPTIONS.map((city) => {
+                const active = selectedLocation === city;
+                return (
+                  <button
+                    key={city}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => pickLocation(city)}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                      active ? "bg-[#0F766E]/10 text-[#0F766E]" : "text-slate-700 hover:bg-stone-100"
+                    }`}
+                  >
+                    <span>{city}</span>
+                    {active ? <span aria-hidden>✓</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <button
             type="button"
             onClick={() => void runAiSearch()}
             disabled={aiLoading}
-            className="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full bg-[#0F766E] px-3.5 text-xs font-bold text-white shadow-sm transition active:scale-[0.98] disabled:opacity-60"
+            aria-label="Search"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0F766E] text-xs font-bold text-white shadow-sm transition active:scale-[0.98] disabled:opacity-60"
           >
-            <span>{aiLoading ? "…" : "Curate"}</span>
-            <span aria-hidden>⚡</span>
+            <SearchIcon className="h-4 w-4" />
           </button>
         </div>
       </div>

@@ -69,7 +69,7 @@ function AiSearchHeroBar({ value, onChange, onSubmit, loading = false, inputRef 
                 onSubmit();
               }
             }}
-            placeholder="Ask AI to plan your dream wedding..."
+            placeholder="Search smarter with AI"
             className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-500 focus:ring-0 sm:text-base"
           />
 
@@ -77,12 +77,10 @@ function AiSearchHeroBar({ value, onChange, onSubmit, loading = false, inputRef 
             type="button"
             onClick={onSubmit}
             disabled={loading}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_-14px_rgba(15,118,110,0.55)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#0E6A64] hover:shadow-[0_14px_28px_-14px_rgba(15,118,110,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40 focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.99]"
+            aria-label="Search"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0F766E] text-sm font-semibold text-white shadow-[0_10px_22px_-14px_rgba(15,118,110,0.55)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#0E6A64] hover:shadow-[0_14px_28px_-14px_rgba(15,118,110,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40 focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.99]"
           >
-            <span>{loading ? "Curating..." : "Curate"}</span>
-            <span aria-hidden className="text-white/90">
-              ⚡
-            </span>
+            <SearchIcon className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -473,7 +471,7 @@ export default function AiSearchExperience({ headerEl }) {
         <div className={`grid transition-[grid-template-rows] ${TRANSITION} grid-rows-[1fr]`}>
           <div className="min-h-0 overflow-hidden">
             <div
-              className={`px-container-fluid transition ${TRANSITION} translate-y-0 pb-6 pt-0 opacity-100 sm:pb-8 lg:pt-16 lg:pb-12`}
+              className={`px-container-fluid transition ${TRANSITION} translate-y-0 pb-1 pt-0 opacity-100 sm:pb-4 lg:pt-16 lg:pb-12`}
             >
               <div className={`mx-auto w-full max-w-4xl transition ${TRANSITION} will-change-transform scale-100`}>
                 {/* Desktop only: hero copy + in-flow AI bar (mobile uses header AI strip) */}
