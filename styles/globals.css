@@ -47,6 +47,7 @@ body {
   h4,
   h5,
   h6 {
+    font-family: Gilroy, Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: var(--ee-text-heading);
     letter-spacing: -0.015em;
     font-weight: 650;
@@ -95,12 +96,12 @@ body {
 @layer utilities {
   /* Fluid type — use alongside font-display / font-semibold as needed */
   .text-fluid-hero {
-    font-size: clamp(28px, 3vw, 48px);
+    font-size: clamp(28px, 3vw, 36px);
     line-height: 1.12;
   }
 
   .text-fluid-section-title {
-    font-size: clamp(24px, 2.25vw + 0.75rem, 42px);
+    font-size: 36px;
     line-height: 1.15;
   }
 

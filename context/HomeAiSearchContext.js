@@ -16,9 +16,24 @@ const HomeAiSearchContext = createContext(/** @type {null | HomeAiSearchValue} *
  * @property {unknown} aiPlan
  * @property {string} aiError
  * @property {boolean} aiSearched
+ * @property {boolean} aiUnavailable
  * @property {(text: string) => void} handleSuggestionSelect
  * @property {import("react").RefObject<HTMLInputElement | null>} aiInputRef
  */
+
+// --------------------------------------------------------------------------
+// Helper: classify a backend response that means "AI search is not wired up"
+// --------------------------------------------------------------------------
+// The backend (pages/api/ai/search/text.js) returns 503 with
+// `{ ok: false, error: "Weaviate is not configured" }` when WEAVIATE_URL /
+// WEAVIATE_API_KEY env vars are missing. We do NOT want to surface that as a
+// scary red error to end users — it's an operator-side setup gap. Instead the
+// UI flips into a graceful "AI search in setup" state via `aiUnavailable`.
+function isAiUnavailableResponse(status, payload) {
+  if (status === 503) return true;
+  const msg = typeof payload?.error === "string" ? payload.error.toLowerCase() : "";
+  return /weaviate|not configured|ai_search_disabled/.test(msg);
+}
 
 function useHomeAiSearchState() {
   const [aiPrompt, setAiPrompt] = useState("");
@@ -28,6 +43,10 @@ function useHomeAiSearchState() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiSearched, setAiSearched] = useState(false);
+  // `aiUnavailable` is sticky once detected — avoids re-hitting the API on
+  // every keystroke / suggestion click when we already know the backend is
+  // returning 503 because Weaviate isn't configured for this environment.
+  const [aiUnavailable, setAiUnavailable] = useState(false);
   const aiInputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
 
   const reset = useCallback(() => {
@@ -38,6 +57,7 @@ function useHomeAiSearchState() {
     setAiLoading(false);
     setAiError("");
     setAiSearched(false);
+    setAiUnavailable(false);
   }, []);
 
   const handleSuggestionSelect = useCallback((text) => {
@@ -60,6 +80,12 @@ function useHomeAiSearchState() {
   const runAiSearch = useCallback(async () => {
     const q = aiPrompt.trim();
     if (!q || aiLoading) return;
+    // If we've already learned this environment doesn't have Weaviate wired
+    // up, skip the network round-trip and just surface the friendly state.
+    if (aiUnavailable) {
+      setAiSearched(true);
+      return;
+    }
     setAiLoading(true);
     setAiError("");
     setAiAnswer("");
@@ -77,7 +103,14 @@ function useHomeAiSearchState() {
         setAiResults([]);
         setAiAnswer("");
         setAiPlan(null);
-        setAiError(data?.error || "Could not run AI search right now.");
+        // Operator-side setup gap → graceful disabled state. Otherwise show
+        // the (possibly user-facing) error message returned by the API.
+        if (isAiUnavailableResponse(res.status, data)) {
+          setAiUnavailable(true);
+          setAiError("");
+        } else {
+          setAiError(data?.error || "Could not run AI search right now.");
+        }
         return;
       }
       const rows = Array.isArray(data.results) ? data.results : [];
@@ -112,7 +145,7 @@ function useHomeAiSearchState() {
     } finally {
       setAiLoading(false);
     }
-  }, [aiPrompt, aiLoading]);
+  }, [aiPrompt, aiLoading, aiUnavailable]);
 
   return useMemo(
     () => ({
@@ -125,6 +158,7 @@ function useHomeAiSearchState() {
       aiPlan,
       aiError,
       aiSearched,
+      aiUnavailable,
       handleSuggestionSelect,
       aiInputRef,
       reset,
@@ -138,6 +172,7 @@ function useHomeAiSearchState() {
       aiPlan,
       aiError,
       aiSearched,
+      aiUnavailable,
       handleSuggestionSelect,
       aiInputRef,
       reset,

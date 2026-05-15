@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
+import logoSvg from "../assets/logo.svg";
 import { useWishlist } from "../context/WishlistContext";
 import Button from "./Button";
 import HeaderHeart from "./HeaderHeart";
@@ -56,17 +57,7 @@ export default function Navbar() {
           className="flex shrink-0 items-center gap-2 rounded-md outline-none ring-brand-500/40 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2"
           aria-label="EVENTiZO"
         >
-          <span className="inline-flex h-10 w-10 items-center justify-center">
-            <svg viewBox="0 0 64 64" className="h-10 w-10" aria-hidden>
-              <path d="M20 50a22 22 0 1 1 24 0" fill="none" stroke="#0B2D74" strokeWidth="6" strokeLinecap="round" />
-              <path d="M30 52V24h4v28z" fill="#0B2D74" />
-              <path d="M34 52V24h4v28z" fill="#25A9FF" />
-              <path d="M32 6l3.2 6.7L42 14l-4.8 5.1L38.2 26 32 22.5 25.8 26l1-6.9L22 14l6.8-1.3z" fill="#F9B233" />
-            </svg>
-          </span>
-          <span className="text-xl font-extrabold tracking-wide text-[#0B2D74]">
-            EVENT<span className="font-medium lowercase text-[#0B2D74]">i</span>ZO
-          </span>
+          <img src={logoSvg.src} alt="EVENTiZO" className="h-8 w-auto shrink-0" />
         </Link>
 
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-2 md:flex">

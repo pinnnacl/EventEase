@@ -2,6 +2,7 @@ import Link from "next/link";
 import { User } from "lucide-react";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import logoSvg from "../../assets/logo.svg";
 import { useCustomerAuth } from "../../context/CustomerAuthContext";
 import { useWishlist } from "../../context/WishlistContext";
 import HeaderHeart from "../HeaderHeart";
@@ -9,43 +10,6 @@ import AiSearchExperience from "./AiSearchExperience";
 import MobileBottomNav from "./MobileBottomNav";
 import MobileHeaderAiSearch from "./MobileHeaderAiSearch";
 import { CATEGORY_NAV_ITEMS, MOBILE_HEADER_NAV_ITEMS, isCategoryActive } from "./categoryNavConfig";
-
-/** Inline EVENTiZO logo mark + wordmark */
-function LogoEventizo({ className = "h-10 w-auto shrink-0 text-[#0B2D74]" }) {
-  return (
-    <svg className={className} viewBox="0 0 360 64" fill="none" aria-hidden>
-      <path d="M34 54a22 22 0 1 1 24 0" fill="none" stroke="#0B2D74" strokeWidth="6" strokeLinecap="round" />
-      <path d="M44 54V26h4v28z" fill="#0B2D74" />
-      <path d="M48 54V26h4v28z" fill="#25A9FF" />
-      <path
-        d="M46 8l3.2 6.7L56 16l-4.8 5.1L52.2 28 46 24.5 39.8 28l1-6.9L36 16l6.8-1.3z"
-        fill="#F9B233"
-      />
-      <text
-        x="84"
-        y="46"
-        fill="#0B2D74"
-        fontSize="42"
-        fontWeight="800"
-        letterSpacing="1"
-        fontFamily="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
-      >
-        EVENT
-      </text>
-      <text
-        x="232"
-        y="46"
-        fill="#0B2D74"
-        fontSize="42"
-        fontWeight="500"
-        letterSpacing="0.5"
-        fontFamily="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
-      >
-        iZO
-      </text>
-    </svg>
-  );
-}
 
 export default function AppLayout({ children }) {
   const router = useRouter();
@@ -55,6 +19,7 @@ export default function AppLayout({ children }) {
   const [headerEl, setHeaderEl] = useState(null);
   const [vendorMenuOpen, setVendorMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [pendingActiveHref, setPendingActiveHref] = useState(null);
   const vendorMenuRef = useRef(null);
   const accountMenuRef = useRef(null);
 
@@ -100,6 +65,33 @@ export default function AppLayout({ children }) {
     return () => router.events.off("routeChangeStart", closeOnRouteStart);
   }, [router.events]);
 
+  useEffect(() => {
+    function clearPendingActive() {
+      setPendingActiveHref(null);
+    }
+    router.events.on("routeChangeComplete", clearPendingActive);
+    router.events.on("routeChangeError", clearPendingActive);
+    return () => {
+      router.events.off("routeChangeComplete", clearPendingActive);
+      router.events.off("routeChangeError", clearPendingActive);
+    };
+  }, [router.events]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const warmRoutes = ["/", "/venues", "/photography", "/makeup"];
+    const prefetchRoutes = () => {
+      warmRoutes.forEach((href) => {
+        void router.prefetch(href);
+      });
+    };
+
+    prefetchRoutes();
+    const timer = window.setTimeout(prefetchRoutes, 1200);
+    return () => window.clearTimeout(timer);
+  }, [router]);
+
   const pathname = router.pathname;
   const isHome = pathname === "/";
   const isVendorRoute = pathname.startsWith("/vendor");
@@ -126,25 +118,40 @@ export default function AppLayout({ children }) {
   const navList = (
     <ul className="flex min-w-max justify-start gap-3.5 px-1 sm:min-w-0 sm:w-full sm:justify-center sm:gap-5 sm:px-0">
       {CATEGORY_NAV_ITEMS.map(({ key, label, href, iconSrc }) => {
-        const active = isCategoryActive(pathname, href);
+        const active = pendingActiveHref === href || isCategoryActive(pathname, href);
+        const warmRoute = () => {
+          void router.prefetch(href);
+        };
         return (
           <li key={key} className="shrink-0">
             <Link
               href={href}
-              className={`group relative flex flex-col items-center justify-center gap-0 rounded-lg px-1.5 py-1 text-slate-600 transition duration-200 ease-in-out hover:-translate-y-0.5 hover:text-[#0F766E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
-                active ? "text-[#0F766E]" : ""
+              prefetch
+              onMouseEnter={warmRoute}
+              onFocus={warmRoute}
+              onTouchStart={warmRoute}
+              onClick={() => setPendingActiveHref(href)}
+              className={`group relative flex flex-col items-center justify-center gap-1 rounded-lg px-1.5 py-1 text-slate-600 transition duration-200 ease-in-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
+                active ? "text-[#5a45f5] hover:text-[#5a45f5]" : "hover:text-[#0F766E]"
               }`}
             >
               <span className="relative grid place-items-center">
-                <img
-                  src={iconSrc}
-                  alt=""
-                  draggable="false"
-                  loading="lazy"
-                  className="relative h-[3.125rem] w-[3.125rem] select-none object-contain opacity-100 [filter:none] sm:h-[3.375rem] sm:w-[3.375rem]"
+                <span
+                  aria-hidden
+                  className="relative h-6 w-6 select-none bg-current"
+                  style={{
+                    WebkitMaskImage: `url(${iconSrc})`,
+                    WebkitMaskRepeat: "no-repeat",
+                    WebkitMaskPosition: "center",
+                    WebkitMaskSize: "contain",
+                    maskImage: `url(${iconSrc})`,
+                    maskRepeat: "no-repeat",
+                    maskPosition: "center",
+                    maskSize: "contain",
+                  }}
                 />
               </span>
-              <span className="-mt-1 text-center text-[0.625rem] font-semibold leading-tight tracking-tight sm:text-[0.6875rem]">
+              <span className="text-center text-[0.625rem] font-semibold leading-tight tracking-tight sm:text-[0.6875rem]">
                 {label}
               </span>
               <span className="pointer-events-none absolute -bottom-1 left-1/2 h-0.5 w-10 -translate-x-1/2 rounded-full bg-brand-600 opacity-0 transition duration-200 ease-in-out group-hover:opacity-40" />
@@ -164,25 +171,40 @@ export default function AppLayout({ children }) {
   const mobileHeaderNavList = (
     <ul className="flex min-w-max items-stretch justify-center gap-4 px-2 text-center">
       {MOBILE_HEADER_NAV_ITEMS.map(({ key, label, href, iconSrc }) => {
-        const active = isCategoryActive(pathname, href);
+        const active = pendingActiveHref === href || isCategoryActive(pathname, href);
+        const warmRoute = () => {
+          void router.prefetch(href);
+        };
         return (
           <li key={key} className="shrink-0">
             <Link
               href={href}
-              className={`group relative flex min-h-[52px] min-w-[68px] flex-col items-center justify-center gap-0 rounded-xl px-2.5 py-0.5 text-slate-600 transition duration-200 ease-in-out hover:bg-stone-100/90 hover:text-[#0F766E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
-                active ? "text-[#0F766E]" : ""
+              prefetch
+              onMouseEnter={warmRoute}
+              onFocus={warmRoute}
+              onTouchStart={warmRoute}
+              onClick={() => setPendingActiveHref(href)}
+              className={`group relative flex min-h-[52px] min-w-[68px] flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-0.5 text-slate-600 transition duration-200 ease-in-out hover:bg-stone-100/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
+                active ? "text-[#5a45f5] hover:text-[#5a45f5]" : "hover:text-[#0F766E]"
               }`}
             >
               <span className="relative grid place-items-center">
-                <img
-                  src={iconSrc}
-                  alt=""
-                  draggable="false"
-                  loading="lazy"
-                  className="relative h-[3.375rem] w-[3.375rem] select-none object-contain opacity-100 [filter:none]"
+                <span
+                  aria-hidden
+                  className="relative h-6 w-6 select-none bg-current"
+                  style={{
+                    WebkitMaskImage: `url(${iconSrc})`,
+                    WebkitMaskRepeat: "no-repeat",
+                    WebkitMaskPosition: "center",
+                    WebkitMaskSize: "contain",
+                    maskImage: `url(${iconSrc})`,
+                    maskRepeat: "no-repeat",
+                    maskPosition: "center",
+                    maskSize: "contain",
+                  }}
                 />
               </span>
-              <span className="-mt-1 max-w-[5.25rem] text-center text-[0.65rem] font-semibold leading-tight tracking-tight">
+              <span className="max-w-[5.25rem] text-center text-[0.65rem] font-semibold leading-tight tracking-tight">
                 {label}
               </span>
               <span
@@ -220,12 +242,12 @@ export default function AppLayout({ children }) {
 
           {/* Desktop (lg+): unchanged — logo, full nav, wishlist, account, vendor menu */}
           <div className="hidden lg:block">
-            <div className="relative flex items-center gap-2.5 px-container-fluid pt-2 pb-1 sm:pt-2.5 sm:pb-1.5">
+            <div className="relative flex h-[70px] items-center gap-2.5 px-container-fluid">
               <Link
                 href="/"
                 className="group flex min-w-0 items-center rounded-lg outline-none ring-brand-500/30 transition duration-200 hover:bg-stone-100/80 focus-visible:ring-2 focus-visible:ring-offset-2"
               >
-                <LogoEventizo className="h-10 w-auto shrink-0 text-[#0B2D74] transition-opacity duration-200 group-hover:opacity-90 sm:h-11" />
+                <img src={logoSvg.src} alt="EVENTiZO" className="h-6 w-auto shrink-0 transition-opacity duration-200 group-hover:opacity-90" />
               </Link>
 
               <div className="flex min-w-0 flex-1 justify-center">
@@ -241,9 +263,9 @@ export default function AppLayout({ children }) {
                 <Link
                   href="/wishlist"
                   aria-label={wishlistCount > 0 ? `Wishlist, ${wishlistCount} saved items` : "Wishlist"}
-                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
                 >
-                  <HeaderHeart active={wishlistCount > 0} className="h-5 w-5" />
+                  <HeaderHeart active={wishlistCount > 0} className="h-[18px] w-[18px]" />
                   {wishlistCount > 0 ? (
                     <span className="absolute right-0.5 top-0.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[0.65rem] font-bold tabular-nums leading-none text-white ring-2 ring-white">
                       {wishlistCount > 99 ? "99+" : wishlistCount}
@@ -262,12 +284,12 @@ export default function AppLayout({ children }) {
                         setAccountMenuOpen((o) => !o);
                         setVendorMenuOpen(false);
                       }}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#0F766E] to-[#0a5c56] text-sm font-bold uppercase text-white shadow-md ring-2 ring-white/90 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#0F766E] to-[#0a5c56] text-sm font-bold uppercase text-white shadow-md ring-2 ring-white/90 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
                     >
                       {(customer.name || "").trim() ? (
                         (customer.name || "").trim().charAt(0)
                       ) : (
-                        <User className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+                        <User className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
                       )}
                     </button>
                     <div
@@ -311,9 +333,9 @@ export default function AppLayout({ children }) {
                         setAccountMenuOpen((o) => !o);
                         setVendorMenuOpen(false);
                       }}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-stone-200/90 text-[#115E59] shadow-sm ring-1 ring-stone-300/70 transition hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-stone-200/90 text-[#115E59] shadow-sm ring-1 ring-stone-300/70 transition hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
                     >
-                      <User className="h-5 w-5" aria-hidden />
+                      <User className="h-[18px] w-[18px]" aria-hidden />
                     </button>
                     <div
                       role="menu"
@@ -360,9 +382,9 @@ export default function AppLayout({ children }) {
                       setVendorMenuOpen((v) => !v);
                       setAccountMenuOpen(false);
                     }}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/55 text-[#115E59] shadow-sm ring-1 ring-stone-200/60 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2"
                   >
-                    <MenuIcon />
+                    <MenuIcon className="h-[18px] w-[18px]" />
                   </button>
 
                   <div
@@ -402,7 +424,7 @@ export default function AppLayout({ children }) {
 
       <div
         className={`flex min-w-0 w-full flex-1 flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0 ${
-          isHome ? "pt-0 sm:pt-3 lg:pt-16" : ""
+          isHome ? "pt-0 sm:pt-3" : ""
         }`}
       >
         {children}

@@ -82,12 +82,13 @@ export default function PhotographyPage({ vendors = [], loadError = false }) {
   );
 }
 
-export async function getServerSideProps() {
+export async function getStaticProps() {
   const { venues, error } = await loadApprovedVenuesForListing({ category: "Photographer" });
   return {
     props: {
       vendors: venues ?? [],
       loadError: Boolean(error),
     },
+    revalidate: 60,
   };
 }

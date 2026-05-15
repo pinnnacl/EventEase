@@ -48,7 +48,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
+        display: ["Gilroy", "Inter", "system-ui", "sans-serif"],
         arial: ["Arial", "Helvetica Neue", "Helvetica", "sans-serif"],
         "makeup-sans": ["var(--font-makeup-body)", "Manrope", "system-ui", "sans-serif"],
         "makeup-serif": ["var(--font-makeup-display)", "Noto Serif", "Georgia", "serif"],

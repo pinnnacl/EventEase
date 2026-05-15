@@ -1,5 +1,15 @@
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  turbopack: {
+    // Ensure Turbopack treats this folder as the project root even if
+    // there are other lockfiles elsewhere on the machine/workspace.
+    root: __dirname,
+  },
   images: {
     remotePatterns: [
       {

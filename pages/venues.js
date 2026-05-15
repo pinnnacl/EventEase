@@ -16,9 +16,14 @@ function buildVenueHref(venueId, selectedDate) {
   return `/venue/${venueId}`;
 }
 
-export default function VenuesPage({ vendors = [], selectedDate = null, loadError = false }) {
+export default function VenuesPage({ vendors = [], loadError = false }) {
   const router = useRouter();
   const geo = useUserGeolocation();
+  const selectedDate = useMemo(() => {
+    if (!router.isReady) return null;
+    const dateRaw = typeof router.query.date === "string" ? router.query.date.trim().slice(0, 10) : null;
+    return dateRaw && isValidYmd(dateRaw) ? dateRaw : null;
+  }, [router.isReady, router.query.date]);
 
   const resultsLocation = useMemo(() => {
     if (!router.isReady) return "Kerala";
@@ -81,20 +86,14 @@ export default function VenuesPage({ vendors = [], selectedDate = null, loadErro
   );
 }
 
-export async function getServerSideProps({ query }) {
-  const dateRaw = typeof query.date === "string" ? query.date.trim().slice(0, 10) : null;
-  const selectedDate = dateRaw && isValidYmd(dateRaw) ? dateRaw : null;
-
-  const { venues, error } = await loadApprovedVenuesForListing({
-    category: "Venue",
-    selectedDateYmd: selectedDate,
-  });
+export async function getStaticProps() {
+  const { venues, error } = await loadApprovedVenuesForListing({ category: "Venue" });
 
   return {
     props: {
       vendors: JSON.parse(JSON.stringify(venues)),
-      selectedDate,
       loadError: Boolean(error),
     },
+    revalidate: 60,
   };
 }

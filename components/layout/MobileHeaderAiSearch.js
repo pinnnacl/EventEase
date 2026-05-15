@@ -73,7 +73,7 @@ export default function MobileHeaderAiSearch() {
       aria-hidden={scrolledDown ? "true" : "false"}
     >
       <div className="px-container-fluid">
-        <div className="flex w-full min-w-0 items-center gap-2 rounded-full border border-[#D8E4E7] bg-white/95 px-2.5 py-1 shadow-sm">
+        <div className="flex w-full min-w-0 items-center gap-2 rounded-[12px] border border-[#D8E4E7] bg-white/95 px-2.5 py-1 shadow-sm">
           <input
             ref={aiInputRef}
             value={aiPrompt}
@@ -129,10 +129,13 @@ export default function MobileHeaderAiSearch() {
             type="button"
             onClick={() => void runAiSearch()}
             disabled={aiLoading}
-            aria-label="Search"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0F766E] text-xs font-bold text-white shadow-sm transition active:scale-[0.98] disabled:opacity-60"
+            aria-label="Curate"
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-r from-[#5A45F5] to-[#4F39F2] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(79,57,242,0.65)] transition duration-200 ease-out hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#635bff]/45 focus-visible:ring-offset-2 active:translate-y-[1px] disabled:opacity-60"
           >
-            <SearchIcon className="h-4 w-4" />
+            <span>Curate</span>
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 4l6 6-6 6" />
+            </svg>
           </button>
         </div>
       </div>

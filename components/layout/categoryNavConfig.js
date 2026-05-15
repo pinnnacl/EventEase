@@ -1,8 +1,13 @@
+import homeIcon from "../../assets/Home.svg";
+import venuesIcon from "../../assets/venues.svg";
+import photographyIcon from "../../assets/photography.svg";
+import makeupIcon from "../../assets/makeup.svg";
+
 export const CATEGORY_NAV_ITEMS = [
-  { key: "home", label: "Home", href: "/", iconSrc: "/nav/home.png" },
-  { key: "venues", label: "Venues", href: "/venues", iconSrc: "/nav/venues.png" },
-  { key: "photography", label: "Photography", href: "/photography", iconSrc: "/nav/photography.png" },
-  { key: "makeup", label: "Makeup", href: "/makeup", iconSrc: "/nav/makeup.png" },
+  { key: "home", label: "Home", href: "/", iconSrc: homeIcon.src },
+  { key: "venues", label: "Venues", href: "/venues", iconSrc: venuesIcon.src },
+  { key: "photography", label: "Photography", href: "/photography", iconSrc: photographyIcon.src },
+  { key: "makeup", label: "Makeup", href: "/makeup", iconSrc: makeupIcon.src },
 ];
 
 /** Mobile header: Venues, Photography, Makeup (Home lives in bottom nav). */

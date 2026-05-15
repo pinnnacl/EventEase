@@ -24,12 +24,13 @@ export default function HomePage({ featuredVenues = [], loadError = false }) {
   );
 }
 
-export async function getServerSideProps() {
+export async function getStaticProps() {
   const { venues, error } = await loadApprovedVenuesForListing({ category: "Venue" });
   return {
     props: {
       featuredVenues: JSON.parse(JSON.stringify(venues.slice(0, 6))),
       loadError: Boolean(error),
     },
+    revalidate: 60,
   };
 }

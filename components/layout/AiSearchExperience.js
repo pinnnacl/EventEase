@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 import { useWishlist } from "../../context/WishlistContext";
 import { useHomeAiSearch } from "../../context/HomeAiSearchContext";
+import bannerImage from "../../assets/banner2.webp";
 import SearchSuggestions from "./SearchSuggestions";
 import WishlistSegmentedActions from "./WishlistSegmentedActions";
 import {
@@ -46,9 +48,9 @@ function SearchIcon({ className }) {
  */
 function AiSearchHeroBar({ value, onChange, onSubmit, loading = false, inputRef }) {
   return (
-    <div className={`w-full origin-top transition-transform ${TRANSITION}`}>
+    <div className={`mx-auto w-full max-w-[600px] origin-top transition-transform ${TRANSITION}`}>
       <div
-        className={`group relative w-full overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-[0_10px_30px_-22px_rgba(20,43,60,0.25)] backdrop-blur-md transition ${TRANSITION} hover:shadow-[0_14px_36px_-22px_rgba(20,43,60,0.32)] focus-within:border-[#0F766E]/45 focus-within:shadow-[0_12px_34px_-22px_rgba(20,43,60,0.3)]`}
+        className={`group relative w-full overflow-hidden rounded-[12px] border border-[#D8E4E7] bg-white/85 shadow-[0_10px_30px_-22px_rgba(20,43,60,0.25)] backdrop-blur-md transition ${TRANSITION} hover:shadow-[0_14px_36px_-22px_rgba(20,43,60,0.32)] focus-within:border-[#0F766E]/45 focus-within:shadow-[0_12px_34px_-22px_rgba(20,43,60,0.3)]`}
       >
         <div className="flex items-center gap-3 px-5 py-3.5 sm:gap-3.5 sm:px-6 sm:py-4">
           <span className="shrink-0 text-slate-500" aria-hidden>
@@ -77,10 +79,13 @@ function AiSearchHeroBar({ value, onChange, onSubmit, loading = false, inputRef 
             type="button"
             onClick={onSubmit}
             disabled={loading}
-            aria-label="Search"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0F766E] text-sm font-semibold text-white shadow-[0_10px_22px_-14px_rgba(15,118,110,0.55)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#0E6A64] hover:shadow-[0_14px_28px_-14px_rgba(15,118,110,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40 focus-visible:ring-offset-2 active:translate-y-0 active:scale-[0.99]"
+            aria-label="Curate"
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-r from-[#5A45F5] to-[#4F39F2] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(79,57,242,0.65)] transition duration-200 ease-out hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#635bff]/45 focus-visible:ring-offset-2 active:translate-y-[1px]"
           >
-            <SearchIcon className="h-4 w-4" />
+            <span>Curate</span>
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 4l6 6-6 6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -319,7 +324,7 @@ function StickySegmentedSearch() {
     "mt-0.5 w-full min-w-0 border-0 bg-transparent p-0 text-[0.8125rem] font-semibold leading-tight text-slate-900 outline-none ring-0 placeholder:font-normal placeholder:text-slate-500 focus:ring-0 sm:text-sm";
 
   const searchButtonClass =
-    "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0F766E] text-white shadow-[0_4px_12px_-4px_rgba(15,118,110,0.4)] transition duration-200 ease-out hover:scale-105 hover:bg-[#0E6A64] hover:shadow-[0_6px_16px_-4px_rgba(15,118,110,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/35 focus-visible:ring-offset-2 active:scale-95 sm:h-8 sm:w-8";
+    "inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-[10px] bg-gradient-to-r from-[#5A45F5] to-[#4F39F2] px-3 text-[0.6875rem] font-semibold text-white shadow-[0_8px_16px_-10px_rgba(79,57,242,0.75)] transition duration-200 ease-out hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#635bff]/45 focus-visible:ring-offset-2 active:translate-y-[1px] sm:h-9 sm:px-3.5 sm:text-xs";
 
   return (
     <div
@@ -327,7 +332,7 @@ function StickySegmentedSearch() {
     >
       {/* Mobile / tablet: single-line search bar */}
       <div
-        className={`flex lg:hidden ${TRANSITION} h-10 min-h-10 items-center overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md`}
+        className={`flex lg:hidden ${TRANSITION} h-10 min-h-10 items-center overflow-hidden rounded-[12px] border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md`}
         role="search"
       >
         <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-0 transition-colors hover:bg-neutral-100/90 focus-within:bg-neutral-100/80 focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#0F766E]/12">
@@ -341,9 +346,12 @@ function StickySegmentedSearch() {
           />
         </label>
         <div className="h-6 w-px shrink-0 bg-gray-200" aria-hidden />
-        <div className="flex shrink-0 items-center p-1 pr-1.5">
-          <button type="button" onClick={runSearch} aria-label="Search" className={searchButtonClass}>
-            <SearchIcon className="h-3.5 w-3.5 text-white" />
+        <div className="flex shrink-0 items-center p-1">
+          <button type="button" onClick={runSearch} aria-label="Curate" className={searchButtonClass}>
+            <span>Curate</span>
+            <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 4l6 6-6 6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -351,10 +359,10 @@ function StickySegmentedSearch() {
       {/* Desktop (lg+): segmented Airbnb-style bar */}
       <div
         role="search"
-        className={`hidden h-11 min-h-11 min-w-0 items-stretch overflow-hidden rounded-full border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md transition-shadow lg:flex lg:h-12 lg:min-h-12 ${TRANSITION} hover:shadow-lg`}
+        className={`hidden h-11 min-h-11 min-w-0 items-stretch overflow-hidden rounded-[12px] border border-[#D8E4E7] bg-white/85 shadow-md backdrop-blur-md transition-shadow lg:flex lg:h-12 lg:min-h-12 ${TRANSITION} hover:shadow-lg`}
       >
         <div className="flex min-h-0 min-w-0 flex-1 items-stretch">
-          <label className={`${segmentDesktop} min-w-0 flex-1 rounded-l-full`}>
+          <label className={`${segmentDesktop} min-w-0 flex-1 rounded-l-[12px]`}>
             <span className={labelCls}>Location</span>
             <input
               value={location}
@@ -391,9 +399,12 @@ function StickySegmentedSearch() {
           </label>
         </div>
 
-        <div className="flex shrink-0 items-center border-l border-gray-200 bg-white/80 p-1 pr-1.5 backdrop-blur-md sm:pr-2">
-          <button type="button" onClick={runSearch} aria-label="Search" className={searchButtonClass}>
-            <SearchIcon className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
+        <div className="flex shrink-0 items-center border-l border-gray-200 bg-white/80 p-1 backdrop-blur-md">
+          <button type="button" onClick={runSearch} aria-label="Curate" className={searchButtonClass}>
+            <span>Curate</span>
+            <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 4l6 6-6 6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -461,13 +472,17 @@ export default function AiSearchExperience({ headerEl }) {
     aiPlan,
     aiError,
     aiSearched,
+    aiUnavailable,
     handleSuggestionSelect,
     aiInputRef,
   } = homeAi;
 
   return (
     <>
-      <section className="w-full border-0 bg-transparent shadow-none">
+      <section className="relative isolate w-full border-0 bg-transparent shadow-none">
+        <div className="pointer-events-none absolute top-0 left-1/2 -z-10 w-screen -translate-x-1/2" aria-hidden>
+          <img src={bannerImage.src} alt="" className="h-auto w-full object-cover object-center" />
+        </div>
         <div className={`grid transition-[grid-template-rows] ${TRANSITION} grid-rows-[1fr]`}>
           <div className="min-h-0 overflow-hidden">
             <div
@@ -476,7 +491,7 @@ export default function AiSearchExperience({ headerEl }) {
               <div className={`mx-auto w-full max-w-4xl transition ${TRANSITION} will-change-transform scale-100`}>
                 {/* Desktop only: hero copy + in-flow AI bar (mobile uses header AI strip) */}
                 <div className="mx-auto mb-6 hidden max-w-3xl text-center lg:mb-7 lg:block">
-                  <h1 className="font-sans text-3xl font-semibold leading-tight tracking-tight text-[#0F172A] sm:text-4xl">
+                  <h1 className="font-display text-[36px] font-semibold leading-tight tracking-tight text-[#0F172A]">
                     Plan your dream wedding with AI
                   </h1>
                   <p className="mx-auto mt-2.5 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
@@ -498,7 +513,49 @@ export default function AiSearchExperience({ headerEl }) {
                 </div>
                 {aiSearched ? (
                   <div className="mt-4 lg:mt-5">
-                    {aiError ? (
+                    {/* ------------------------------------------------------------------
+                     * Graceful "AI offline" panel.
+                     *
+                     * Shown when the backend reports Weaviate is not configured for this
+                     * environment (e.g. local dev without a vector DB). We deliberately
+                     * use a soft teal/stone palette — NOT the rose error palette below —
+                     * because this is an operator setup gap, not a user-facing failure.
+                     * The CTA points users at the deterministic /venues listing so they
+                     * can keep browsing while AI search is being wired up.
+                     * ------------------------------------------------------------------ */}
+                    {aiUnavailable ? (
+                      <div className="rounded-2xl border border-[#0F766E]/18 bg-gradient-to-br from-teal-50/80 via-white to-white px-5 py-4 shadow-[0_10px_30px_-22px_rgba(15,118,110,0.35)] sm:px-6 sm:py-5">
+                        <div className="flex items-start gap-3">
+                          <span
+                            aria-hidden
+                            className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0F766E]/10 text-[#0F766E]"
+                          >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12l.7 2.1L8 15l-2.3.9L5 18l-.7-2.1L2 15l2.3-.9L5 12z" />
+                            </svg>
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold tracking-tight text-[#0F172A] sm:text-[0.9375rem]">
+                              AI search is taking a quick break
+                            </p>
+                            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                              We’re fine-tuning the AI matching engine for this environment. In the meantime,
+                              you can browse curated venues and services with our regular search.
+                            </p>
+                            <Link
+                              href="/venues"
+                              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_18px_-12px_rgba(15,118,110,0.55)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#0E6A64] hover:shadow-[0_12px_24px_-12px_rgba(15,118,110,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/35 focus-visible:ring-offset-2 active:translate-y-0 sm:text-[0.8125rem]"
+                            >
+                              Browse venues
+                              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+                              </svg>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ) : aiError ? (
                       <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">
                         {aiError}
                       </p>
