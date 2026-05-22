@@ -3,7 +3,7 @@ import { useWishlist } from "../context/WishlistContext";
 
 function HeartOutline({ className }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden>
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -45,7 +45,7 @@ export default function WishlistToggle({ venueId, photographyId, className = "",
     "min-h-[44px] min-w-[44px] border border-white/35 bg-black/40 px-0 py-0 shadow-lg shadow-black/30 backdrop-blur-md hover:border-white/55 hover:bg-black/55 hover:shadow-xl focus-visible:ring-white/60 focus-visible:ring-offset-0";
 
   const defaultClasses = iconOnly
-    ? "h-9 w-9 shrink-0 border border-white/90 bg-white/95 p-0 shadow-md backdrop-blur-sm hover:scale-[1.05] hover:border-brand-200 hover:shadow-lg"
+    ? "h-9 w-9 shrink-0 border border-white/70 bg-white/90 p-0 shadow-[0_2px_12px_-2px_rgba(15,23,42,0.18)] backdrop-blur-sm hover:scale-[1.04] hover:bg-white hover:shadow-[0_4px_16px_-4px_rgba(15,23,42,0.2)]"
     : "min-h-[44px] min-w-[44px] gap-2 border border-white/80 bg-white/95 px-3 py-2 text-sm font-semibold shadow-md backdrop-blur-sm hover:scale-[1.03] hover:border-brand-200 hover:shadow-lg sm:px-4";
 
   return (
@@ -62,8 +62,8 @@ export default function WishlistToggle({ venueId, photographyId, className = "",
             ? "text-rose-300"
             : "text-white"
           : saved
-            ? "text-rose-600 hover:text-rose-700"
-            : "text-brand-700 hover:border-brand-300 hover:text-brand-800"
+            ? "text-rose-500 hover:text-rose-600"
+            : "text-slate-600 hover:text-slate-800"
       } ${bump ? "scale-[1.18]" : "scale-100"} ${className}`.trim()}
     >
       {saved ? (
@@ -72,7 +72,7 @@ export default function WishlistToggle({ venueId, photographyId, className = "",
         />
       ) : (
         <HeartOutline
-          className={`shrink-0 transition-transform duration-200 ${isReel ? "h-6 w-6 text-white drop-shadow-md" : "h-5 w-5 text-brand-600"}`}
+          className={`shrink-0 transition-transform duration-200 ${isReel ? "h-6 w-6 text-white drop-shadow-md" : "h-5 w-5 text-slate-600"}`}
         />
       )}
       {!isReel && !iconOnly ? (

@@ -48,7 +48,7 @@ export default function VenuesPage({ vendors = [], loadError = false }) {
 
       <div className="min-h-screen w-full max-w-none">
         <main className="w-full max-w-none">
-          <Section className="!pt-8 !pb-16 sm:!pt-10 sm:!pb-20">
+          <Section className="!pt-8 !pb-16 bg-white sm:!pt-10 sm:!pb-20">
             {loadError ? (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-medium text-amber-900">
                 We couldn&apos;t load venues right now. Please refresh the page.
@@ -58,7 +58,7 @@ export default function VenuesPage({ vendors = [], loadError = false }) {
                 No venues available yet.
               </p>
             ) : (
-              <ul className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4 xl:gap-5">
+              <ul className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
                 {displayedVenues.map((venue) => (
                   <li key={venue.id} id={venue.id} className="scroll-mt-44 sm:scroll-mt-52">
                     <VenueListingCard

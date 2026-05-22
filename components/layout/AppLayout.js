@@ -423,7 +423,7 @@ export default function AppLayout({ children }) {
       )}
 
       <div
-        className={`flex min-w-0 w-full flex-1 flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0 ${
+        className={`flex min-w-0 w-full flex-1 flex-col pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-0 ${
           isHome ? "pt-0 sm:pt-3" : ""
         }`}
       >
