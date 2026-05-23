@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { useMemo } from "react";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Users } from "lucide-react";
 import WishlistToggle from "../WishlistToggle";
+import useVenueCardPrefetch from "../../hooks/useVenueCardPrefetch";
 import { normalizeVenueTitle } from "../../lib/normalizeVenueTitle";
 import { getVenueDistanceDisplay } from "../../lib/venueDistanceLine";
 import { buildVenueListingCarouselSlides } from "../../lib/venueListingCarouselSlides";
+import { navigateToVenueHref } from "../../lib/venueRoutePrefetch";
 import VenueListingPrice from "./VenueListingPrice";
 import VenueListingImageCarousel from "./VenueListingImageCarousel";
 
@@ -61,6 +64,10 @@ export default function VenueListingCard({
   geoStatus,
   geoUsedFallback = false,
 }) {
+  const router = useRouter();
+  const { rootRef, onIntent } = useVenueCardPrefetch(href, vendor.id);
+  const [tapPending, setTapPending] = useState(false);
+
   const title = normalizeVenueTitle(vendor.businessName);
   const loc = vendor.place?.trim() || vendor.city?.trim() || "—";
   const price = vendor.priceRange?.trim() || "Ask for quote";
@@ -70,6 +77,24 @@ export default function VenueListingCard({
   const aiDistanceText = hasAiDistance ? `${aiDistanceKm.toFixed(2)} km away` : "";
 
   const carouselSlides = useMemo(() => buildVenueListingCarouselSlides(vendor), [vendor]);
+
+  const navigateToVenue = useCallback(() => {
+    navigateToVenueHref(router, href, {
+      onStart: () => setTapPending(true),
+    });
+  }, [router, href]);
+
+  useEffect(() => {
+    function clearPending() {
+      setTapPending(false);
+    }
+    router.events.on("routeChangeComplete", clearPending);
+    router.events.on("routeChangeError", clearPending);
+    return () => {
+      router.events.off("routeChangeComplete", clearPending);
+      router.events.off("routeChangeError", clearPending);
+    };
+  }, [router.events]);
 
   const distanceDisplay =
     geoStatus != null
@@ -105,7 +130,8 @@ export default function VenueListingCard({
       <div className={`${IMAGE_FRAME} ${IMAGE_ASPECT}`}>
         <VenueListingImageCarousel
           slides={carouselSlides}
-          href={href}
+          onNavigate={navigateToVenue}
+          onIntent={onIntent}
           imageSizes={imageSizes}
           alt={title}
           unavailableOnSelectedDate={unavailableOnSelectedDate}
@@ -162,6 +188,14 @@ export default function VenueListingCard({
     return (
       <Link
         href={href}
+        prefetch
+        scroll={false}
+        onMouseEnter={onIntent}
+        onTouchStart={onIntent}
+        onClick={() => {
+          setTapPending(true);
+          onIntent();
+        }}
         className={`block ${CONTENT_GAP} focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-400/40 focus-visible:ring-offset-2`}
       >
         <VenueCardCopy TitleTag={TitleTag} />
@@ -170,7 +204,14 @@ export default function VenueListingCard({
   }
 
   return (
-    <article className={LISTING_SHELL}>
+    <article
+      ref={rootRef}
+      className={`${LISTING_SHELL} transition-[opacity,transform] duration-150 ease-out ${
+        tapPending ? "scale-[0.99] opacity-80" : ""
+      }`}
+      onMouseEnter={onIntent}
+      onTouchStart={onIntent}
+    >
       <VenueCardMedia />
       <VenueCardBody TitleTag={variant === "featured" ? "h3" : "h2"} />
     </article>

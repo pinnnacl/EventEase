@@ -4,6 +4,7 @@ import { WishlistProvider } from "../context/WishlistContext";
 import { CustomerAuthProvider } from "../context/CustomerAuthContext";
 import SupabaseRecoveryRedirect from "../components/auth/SupabaseRecoveryRedirect";
 import AppLayout from "../components/layout/AppLayout";
+import RouteNavigationShell from "../components/layout/RouteNavigationShell";
 import { HomeAiSearchProvider } from "../context/HomeAiSearchContext";
 
 const inter = Inter({
@@ -27,13 +28,15 @@ export default function App({ Component, pageProps }) {
       <CustomerAuthProvider>
         <SupabaseRecoveryRedirect />
         <div className={`page-wrapper bg-background ${inter.variable} ${playfair.variable} font-sans`}>
-          {hideAppLayout ? (
-            inner
-          ) : (
-            <HomeAiSearchProvider>
-              <AppLayout>{inner}</AppLayout>
-            </HomeAiSearchProvider>
-          )}
+          <RouteNavigationShell>
+            {hideAppLayout ? (
+              inner
+            ) : (
+              <HomeAiSearchProvider>
+                <AppLayout>{inner}</AppLayout>
+              </HomeAiSearchProvider>
+            )}
+          </RouteNavigationShell>
         </div>
       </CustomerAuthProvider>
     </WishlistProvider>

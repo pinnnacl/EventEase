@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ResponsiveVendorImage from "../images/ResponsiveVendorImage";
 
@@ -39,7 +38,8 @@ function buildDotWindow(total, active) {
 /**
  * @param {{
  *   slides: CarouselSlide[];
- *   href: string;
+ *   onNavigate: () => void;
+ *   onIntent?: () => void;
  *   imageSizes?: string;
  *   alt?: string;
  *   unavailableOnSelectedDate?: boolean;
@@ -47,12 +47,12 @@ function buildDotWindow(total, active) {
  */
 export default function VenueListingImageCarousel({
   slides,
-  href,
+  onNavigate,
+  onIntent,
   imageSizes = "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 360px",
   alt = "",
   unavailableOnSelectedDate = false,
 }) {
-  const router = useRouter();
   const scrollRef = useRef(/** @type {HTMLDivElement | null} */ (null));
   const slideRefs = useRef(/** @type {(HTMLDivElement | null)[]} */ ([]));
   const dragRef = useRef({ active: false, startX: 0, scrollLeft: 0 });
@@ -137,8 +137,8 @@ export default function VenueListingImageCarousel({
   );
 
   const navigateToVenue = useCallback(() => {
-    void router.push(href);
-  }, [href, router]);
+    onNavigate();
+  }, [onNavigate]);
 
   /** IntersectionObserver — backup + lazy-load neighbour slides while scrolling */
   useEffect(() => {
@@ -345,6 +345,8 @@ export default function VenueListingImageCarousel({
           multi ? "cursor-grab snap-x snap-mandatory active:cursor-grabbing" : "cursor-pointer"
         } overflow-x-auto overflow-y-hidden overscroll-x-contain`}
         onClick={onCarouselClick}
+        onMouseEnter={onIntent}
+        onTouchStart={onIntent}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
