@@ -184,8 +184,8 @@ export default function AppLayout({ children }) {
               onFocus={warmRoute}
               onTouchStart={warmRoute}
               onClick={() => setPendingActiveHref(href)}
-              className={`group relative flex min-h-[52px] min-w-[68px] flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-0.5 text-slate-600 transition duration-200 ease-in-out hover:bg-stone-100/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
-                active ? "text-[#5a45f5] hover:text-[#5a45f5]" : "hover:text-[#0F766E]"
+              className={`group relative flex min-h-[52px] min-w-[68px] flex-col items-center justify-center gap-1 px-2.5 py-1 text-slate-500 transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/25 focus-visible:ring-offset-2 ${
+                active ? "text-[#0F766E]" : "hover:text-slate-700"
               }`}
             >
               <span className="relative grid place-items-center">
@@ -208,8 +208,8 @@ export default function AppLayout({ children }) {
                 {label}
               </span>
               <span
-                className={`pointer-events-none absolute bottom-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-brand-600 transition duration-200 ease-in-out ${
-                  active ? "opacity-100" : "opacity-0 group-hover:opacity-40"
+                className={`pointer-events-none absolute bottom-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[#0F766E] transition-opacity duration-200 ease-in-out ${
+                  active ? "opacity-100" : "opacity-0"
                 }`}
                 aria-hidden
               />
@@ -423,8 +423,8 @@ export default function AppLayout({ children }) {
       )}
 
       <div
-        className={`flex min-w-0 w-full flex-1 flex-col pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-0 ${
-          isHome ? "pt-0 sm:pt-3" : ""
+        className={`flex min-w-0 w-full flex-1 flex-col overflow-x-hidden pb-[calc(5.25rem+env(safe-area-inset-bottom))] lg:overflow-x-visible lg:pb-0 ${
+          isHome ? "pt-0" : ""
         }`}
       >
         {children}

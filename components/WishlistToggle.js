@@ -22,7 +22,7 @@ function HeartFilled({ className }) {
 }
 
 /**
- * @param {{ venueId?: string, photographyId?: string, className?: string, variant?: "default" | "reel", iconOnly?: boolean }} props
+ * @param {{ venueId?: string, photographyId?: string, className?: string, variant?: "default" | "reel" | "overlay", iconOnly?: boolean }} props
  */
 export default function WishlistToggle({ venueId, photographyId, className = "", variant = "default", iconOnly = false }) {
   const { toggle, has, togglePhotography, hasPhotography } = useWishlist();
@@ -31,6 +31,7 @@ export default function WishlistToggle({ venueId, photographyId, className = "",
   const saved = isPhotography ? hasPhotography(id) : has(id);
   const [bump, setBump] = useState(false);
   const isReel = variant === "reel";
+  const isOverlay = variant === "overlay";
 
   function handleClick(e) {
     e.preventDefault();
@@ -44,6 +45,9 @@ export default function WishlistToggle({ venueId, photographyId, className = "",
   const reelClasses =
     "min-h-[44px] min-w-[44px] border border-white/35 bg-black/40 px-0 py-0 shadow-lg shadow-black/30 backdrop-blur-md hover:border-white/55 hover:bg-black/55 hover:shadow-xl focus-visible:ring-white/60 focus-visible:ring-offset-0";
 
+  const overlayClasses =
+    "h-8 w-8 shrink-0 border-0 bg-transparent p-0 shadow-none hover:scale-110 focus-visible:ring-white/80 focus-visible:ring-offset-0";
+
   const defaultClasses = iconOnly
     ? "h-9 w-9 shrink-0 border border-white/70 bg-white/90 p-0 shadow-[0_2px_12px_-2px_rgba(15,23,42,0.18)] backdrop-blur-sm hover:scale-[1.04] hover:bg-white hover:shadow-[0_4px_16px_-4px_rgba(15,23,42,0.2)]"
     : "min-h-[44px] min-w-[44px] gap-2 border border-white/80 bg-white/95 px-3 py-2 text-sm font-semibold shadow-md backdrop-blur-sm hover:scale-[1.03] hover:border-brand-200 hover:shadow-lg sm:px-4";
@@ -55,27 +59,43 @@ export default function WishlistToggle({ venueId, photographyId, className = "",
       aria-pressed={saved}
       aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
       className={`inline-flex items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.97] ${
-        isReel ? reelClasses : defaultClasses
+        isReel ? reelClasses : isOverlay ? overlayClasses : defaultClasses
       } ${
         isReel
           ? saved
             ? "text-rose-300"
             : "text-white"
-          : saved
-            ? "text-rose-500 hover:text-rose-600"
-            : "text-slate-600 hover:text-slate-800"
+          : isOverlay
+            ? saved
+              ? "text-rose-500"
+              : "text-white"
+            : saved
+              ? "text-rose-500 hover:text-rose-600"
+              : "text-slate-600 hover:text-slate-800"
       } ${bump ? "scale-[1.18]" : "scale-100"} ${className}`.trim()}
     >
       {saved ? (
         <HeartFilled
-          className={`shrink-0 transition-transform duration-200 ${isReel ? "h-6 w-6 text-rose-400 drop-shadow-md" : "h-5 w-5 text-rose-500"}`}
+          className={`shrink-0 transition-transform duration-200 ${
+            isReel
+              ? "h-6 w-6 text-rose-400 drop-shadow-md"
+              : isOverlay
+                ? "h-[22px] w-[22px] drop-shadow-[0_1px_4px_rgba(0,0,0,0.45)]"
+                : "h-5 w-5 text-rose-500"
+          }`}
         />
       ) : (
         <HeartOutline
-          className={`shrink-0 transition-transform duration-200 ${isReel ? "h-6 w-6 text-white drop-shadow-md" : "h-5 w-5 text-slate-600"}`}
+          className={`shrink-0 transition-transform duration-200 ${
+            isReel
+              ? "h-6 w-6 text-white drop-shadow-md"
+              : isOverlay
+                ? "h-[22px] w-[22px] drop-shadow-[0_1px_4px_rgba(0,0,0,0.45)]"
+                : "h-5 w-5 text-slate-600"
+          }`}
         />
       )}
-      {!isReel && !iconOnly ? (
+      {!isReel && !isOverlay && !iconOnly ? (
         <span className="hidden max-w-[9.5rem] truncate sm:inline">{saved ? "Saved" : "Add to Wishlist"}</span>
       ) : null}
     </button>

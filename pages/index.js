@@ -16,7 +16,7 @@ export default function HomePage({ featuredVenues = [], loadError = false }) {
 
       <div className="min-h-screen w-full max-w-none">
         <main className="w-full max-w-none">
-          <VenueCardsSection venues={featuredVenues} loadError={loadError} className="mt-2 lg:mt-6" />
+          <VenueCardsSection venues={featuredVenues} loadError={loadError} className="mt-0 lg:mt-6" />
         </main>
         <Footer variant="light" />
       </div>

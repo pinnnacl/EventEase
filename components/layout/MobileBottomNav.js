@@ -1,74 +1,60 @@
 import Link from "next/link";
-import { User } from "lucide-react";
+import { Home, Heart, User } from "lucide-react";
 import { useRouter } from "next/router";
 import { useCustomerAuth } from "../../context/CustomerAuthContext";
 import { useWishlist } from "../../context/WishlistContext";
-import HeaderHeart from "../HeaderHeart";
-import { CATEGORY_NAV_ITEMS } from "./categoryNavConfig";
 
-const homeNavIconSrc = CATEGORY_NAV_ITEMS.find((item) => item.key === "home")?.iconSrc;
-
-/** Main tab row: 80dp with icon + label (accessibility). */
-const NAV_ROW_CLASS = "mx-auto flex h-20 min-h-[80px] max-w-lg items-center justify-around px-1";
-
-const NAV_ITEM_CLASS =
-  "flex h-20 min-h-[80px] min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[10px] font-semibold leading-none transition";
-
-function navItemState(isActive) {
-  return isActive ? "text-[#0F766E]" : "text-slate-600 hover:text-[#115E59]";
-}
+/** Main tab row: 80dp with icon + label. */
+const NAV_ROW_CLASS = "mx-auto flex h-20 min-h-[80px] max-w-lg items-center justify-around px-2";
 
 function NavItem({ href, label, children, onClick, isActive = false }) {
-  const cls = `${NAV_ITEM_CLASS} ${navItemState(isActive)}`;
+  const color = isActive ? "text-[#0F766E]" : "text-slate-500";
+  const cls = `relative flex h-20 min-h-[80px] min-w-[48px] flex-1 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium leading-none transition-colors duration-200 ${color} hover:text-slate-700`;
+
+  const indicator = isActive ? (
+    <span
+      className="absolute bottom-2 left-1/2 h-0.5 w-7 -translate-x-1/2 rounded-full bg-[#0F766E]"
+      aria-hidden
+    />
+  ) : null;
+
   if (onClick) {
     return (
       <button type="button" onClick={onClick} className={cls} aria-label={label}>
         {children}
+        {indicator}
       </button>
     );
   }
+
   return (
     <Link href={href} className={cls} aria-label={label} aria-current={isActive ? "page" : undefined}>
       {children}
+      {indicator}
     </Link>
   );
 }
 
-/** Open icon slot — 24×24dp visual area, no enclosing circle. */
 function NavIconSlot({ children }) {
   return <span className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center">{children}</span>;
 }
 
-function WishlistNavIcon({ count, active }) {
+function WishlistNavIcon({ count, isActive }) {
+  const filled = isActive && count > 0;
   return (
     <NavIconSlot>
-      <HeaderHeart active={active} className="h-5 w-5" />
+      <Heart
+        className="h-[22px] w-[22px]"
+        strokeWidth={1.5}
+        fill={filled ? "currentColor" : "none"}
+        aria-hidden
+      />
       {count > 0 ? (
         <span
-          className={`absolute -right-2 -top-2 flex h-4 w-4 min-w-[16px] items-center justify-center rounded-full bg-brand-600 font-bold leading-none text-white ring-2 ring-white ${
-            count > 9 ? "max-w-[20px] text-[8px]" : "max-w-[16px] text-[10px]"
-          }`}
-          aria-hidden
-        >
-          {count > 99 ? "99+" : count}
-        </span>
+          className="absolute right-0 top-0 h-2 w-2 rounded-full bg-[#0F766E] ring-2 ring-white"
+          aria-label={`${count} saved ${count === 1 ? "venue" : "venues"}`}
+        />
       ) : null}
-    </NavIconSlot>
-  );
-}
-
-function ProfileNavIcon({ customer }) {
-  const initial = (customer?.name || "").trim().charAt(0);
-  if (initial) {
-    return (
-      <NavIconSlot>
-        <span className="text-[0.8125rem] font-bold uppercase leading-none tracking-tight">{initial}</span>
-      </NavIconSlot>
-    );
-  }
-  return (
-    <NavIconSlot>
-      <User className="h-5 w-5" strokeWidth={2} aria-hidden />
     </NavIconSlot>
   );
 }
@@ -85,71 +71,57 @@ export default function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-[58] border-t border-stone-200/90 bg-white pb-[max(4px,env(safe-area-inset-bottom))] shadow-[0_-2px_16px_-6px_rgba(15,23,42,0.1)] backdrop-blur-md lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-[58] isolate border-t border-stone-200/30 bg-white pb-[max(4px,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_-12px_rgba(15,23,42,0.08)] lg:hidden"
       aria-label="Mobile navigation"
     >
       <div className={NAV_ROW_CLASS}>
         <NavItem href="/" label="Home" isActive={homeActive}>
           <NavIconSlot>
-            <span
-              aria-hidden
-              className="h-5 w-5 shrink-0 select-none bg-current"
-              style={{
-                WebkitMaskImage: `url(${homeNavIconSrc})`,
-                WebkitMaskRepeat: "no-repeat",
-                WebkitMaskPosition: "center",
-                WebkitMaskSize: "contain",
-                maskImage: `url(${homeNavIconSrc})`,
-                maskRepeat: "no-repeat",
-                maskPosition: "center",
-                maskSize: "contain",
-              }}
-            />
+            <Home className="h-[22px] w-[22px]" strokeWidth={1.5} fill={homeActive ? "currentColor" : "none"} aria-hidden />
           </NavIconSlot>
           <span>Home</span>
         </NavItem>
 
         <NavItem href="/wishlist" label="Wishlist" isActive={wishActive}>
-          <WishlistNavIcon count={wishlistCount} active={wishlistCount > 0} />
+          <WishlistNavIcon count={wishlistCount} isActive={wishActive} />
           <span>Wishlist</span>
         </NavItem>
 
         {checked && customer ? (
           <NavItem href="/account" label="Account" isActive={pathname === "/account"}>
-            <ProfileNavIcon customer={customer} />
+            <NavIconSlot>
+              { (customer.name || "").trim() ? (
+                <span className="text-[0.75rem] font-semibold uppercase leading-none tracking-tight">
+                  {(customer.name || "").trim().charAt(0)}
+                </span>
+              ) : (
+                <User className="h-[22px] w-[22px]" strokeWidth={1.5} aria-hidden />
+              )}
+            </NavIconSlot>
             <span>Profile</span>
           </NavItem>
         ) : checked && legacyLogin ? (
           <NavItem href="/account" label="Account" isActive={pathname === "/account"}>
             <NavIconSlot>
-              <User className="h-5 w-5" strokeWidth={2} aria-hidden />
+              <User className="h-[22px] w-[22px]" strokeWidth={1.5} aria-hidden />
             </NavIconSlot>
             <span>Account</span>
           </NavItem>
         ) : checked ? (
           <NavItem label="Log in" onClick={() => openLoginModal()} isActive={false}>
             <NavIconSlot>
-              <User className="h-5 w-5" strokeWidth={2} aria-hidden />
+              <User className="h-[22px] w-[22px]" strokeWidth={1.5} aria-hidden />
             </NavIconSlot>
             <span>Login</span>
           </NavItem>
         ) : (
-          <div className={`${NAV_ITEM_CLASS} opacity-40 ${navItemState(false)}`}>
+          <div className="relative flex h-20 min-h-[80px] flex-1 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium leading-none text-slate-400 opacity-50">
             <NavIconSlot>
-              <User className="h-5 w-5" strokeWidth={2} aria-hidden />
+              <User className="h-[22px] w-[22px]" strokeWidth={1.5} aria-hidden />
             </NavIconSlot>
             <span>…</span>
           </div>
         )}
-      </div>
-
-      <div className="flex justify-center border-t border-stone-100/90 px-2 py-1">
-        <Link
-          href="/vendor/login"
-          className="py-0.5 text-[10px] font-medium leading-tight text-slate-500 underline-offset-2 hover:text-[#0F766E] hover:underline"
-        >
-          Vendor login
-        </Link>
       </div>
     </nav>
   );

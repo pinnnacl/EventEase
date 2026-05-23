@@ -18,9 +18,12 @@ export default function VenueCardsSection({ venues = [], loadError = false, load
   const featured = venues.slice(0, FEATURED_COUNT);
 
   return (
-    <Section id="featured-venues" className={`scroll-mt-24 ${className}`.trim()}>
-      <div className="mx-auto w-full max-w-6xl px-4 lg:px-0">
-        <div className="mb-5 w-full text-left sm:mb-6 lg:mb-10 lg:text-center">
+    <Section
+      id="featured-venues"
+      className={`scroll-mt-24 !py-6 sm:!py-8 lg:!py-[clamp(40px,6vw,120px)] ${className}`.trim()}
+    >
+      <div className="mx-auto w-full max-w-6xl min-w-0">
+        <div className="mb-4 w-full text-left sm:mb-5 lg:mb-10 lg:text-center">
           <h2 className="text-2xl font-semibold tracking-tight text-wedding-ink sm:text-[1.7rem] lg:text-fluid-section-title lg:font-bold">
             Featured Venues
           </h2>
@@ -39,19 +42,22 @@ export default function VenueCardsSection({ venues = [], loadError = false, load
         ) : (
           <>
             {/* Mobile & tablet: horizontal snap scroll (below lg) */}
-            <div className="lg:hidden overflow-x-auto overflow-y-visible pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
-              <ul className="flex w-max snap-x snap-mandatory justify-start gap-5 px-0 py-1">
-                {featured.map((venue) => (
-                  <li key={venue.id} className="w-[min(17.5rem,calc(100vw-2rem))] shrink-0 snap-start sm:w-[17.5rem]">
-                    <VenueListingCard
-                      vendor={venue}
-                      href={`/venue/${venue.id}`}
-                      variant="grid"
-                      unavailableOnSelectedDate={Boolean(venue.unavailableOnSelectedDate)}
-                    />
-                  </li>
-                ))}
-              </ul>
+            <div className="-mx-[var(--ee-container-px)] min-w-0 lg:mx-0">
+              <div className="overflow-x-auto overflow-y-visible pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+                <ul className="flex w-max snap-x snap-mandatory gap-4 py-1 pl-[var(--ee-container-px)] pr-[var(--ee-container-px)] sm:gap-5">
+                  {featured.map((venue) => (
+                    <li key={venue.id} className="w-[min(17.5rem,82vw)] shrink-0 snap-start sm:w-[17.5rem]">
+                      <VenueListingCard
+                        vendor={venue}
+                        href={`/venue/${venue.id}`}
+                        variant="grid"
+                        showWishlistToggle
+                        unavailableOnSelectedDate={Boolean(venue.unavailableOnSelectedDate)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
             {/* Desktop (lg+): grid unchanged */}

@@ -2,11 +2,11 @@
 
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { formatOtpPhoneSubtitle, isTenDigitIndiaMobile } from "../../lib/auth/customerPhoneUi";
 import { getCallbackSmsFirebaseAuth } from "../../lib/auth/callbackSmsFirebase";
 import { normalizeWhatsAppRecipientDigits } from "../../lib/whatsappPhone";
-import Button from "../Button";
 import SixDigitOtpInput from "./SixDigitOtpInput";
 
 const RECAPTCHA_CONTAINER_ID = "ee-customer-phone-recaptcha";
@@ -21,17 +21,126 @@ function mapFirebasePhoneError(err) {
 
 /**
  * @param {{
+ *   id: string;
+ *   placeholder: string;
+ *   value: string;
+ *   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+ *   type?: string;
+ *   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+ *   autoComplete?: string;
+ *   maxLength?: number;
+ *   inputRef?: React.Ref<HTMLInputElement>;
+ *   "aria-label"?: string;
+ * }} props
+ */
+function AuthTextField({
+  id,
+  placeholder,
+  value,
+  onChange,
+  type = "text",
+  inputMode,
+  autoComplete,
+  maxLength,
+  inputRef,
+  "aria-label": ariaLabel,
+}) {
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <div
+      className={`rounded-xl border bg-white transition-[border-color,box-shadow] duration-200 ${
+        focused ? "border-[#1A1A1A] shadow-[0_0_0_3px_rgba(26,26,26,0.06)]" : "border-[#DDDDDD]"
+      }`}
+    >
+      <input
+        ref={inputRef}
+        id={id}
+        type={type}
+        value={value}
+        onChange={onChange}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        inputMode={inputMode}
+        autoComplete={autoComplete}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        aria-label={ariaLabel || placeholder}
+        className="w-full min-h-[3rem] border-0 bg-transparent px-3.5 py-3 text-sm text-[#222222] outline-none ring-0 placeholder:text-[#AAAAAA] caret-[#0F766E]"
+      />
+    </div>
+  );
+}
+
+/**
+ * @param {{
+ *   value: string;
+ *   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+ *   inputRef?: React.Ref<HTMLInputElement>;
+ * }} props
+ */
+function PhoneInputField({ value, onChange, inputRef }) {
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <div
+      className={`flex items-stretch overflow-hidden rounded-xl border bg-white transition-[border-color,box-shadow] duration-200 ${
+        focused ? "border-[#1A1A1A] shadow-[0_0_0_3px_rgba(26,26,26,0.06)]" : "border-[#DDDDDD]"
+      }`}
+    >
+      <span className="flex shrink-0 items-center border-r border-[#DDDDDD] bg-[#FAFAFA] px-3.5 text-sm font-semibold tabular-nums text-[#222222]">
+        +91
+      </span>
+      <input
+        ref={inputRef}
+        id="auth-phone"
+        type="tel"
+        value={value}
+        onChange={onChange}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        inputMode="numeric"
+        autoComplete="tel-national"
+        maxLength={10}
+        placeholder="Enter mobile number"
+        aria-label="Mobile number"
+        className="min-h-[3rem] min-w-0 flex-1 border-0 bg-transparent px-3.5 py-3 text-sm text-[#222222] outline-none ring-0 placeholder:text-[#AAAAAA] caret-[#0F766E]"
+      />
+    </div>
+  );
+}
+
+/**
+ * @param {React.ButtonHTMLAttributes<HTMLButtonElement>} props
+ */
+function AuthPrimaryButton({ className = "", children, ...props }) {
+  return (
+    <button
+      type="button"
+      className={`inline-flex w-full items-center justify-center rounded-xl bg-[#1A1A1A] px-5 py-3.5 text-sm font-semibold text-white transition duration-200 hover:bg-[#333333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A1A1A]/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 ${className}`.trim()}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * @param {{
  *   open: boolean;
  *   onClose: () => void;
  *   onAuthenticated: (payload: { user: object; callbackPass: string }) => void | Promise<void>;
  * }} props
  */
 export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }) {
+  const router = useRouter();
+  const titleId = useId();
+  const phoneInputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const nameInputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const confirmationRef = useRef(null);
   const verifierRef = useRef(null);
 
-  const [step, setStep] = useState("form");
+  const [step, setStep] = useState("phone");
   const [name, setName] = useState("");
   const [phone10, setPhone10] = useState("");
   const [otp, setOtp] = useState("");
@@ -55,7 +164,7 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
 
   useEffect(() => {
     if (!open) {
-      setStep("form");
+      setStep("phone");
       setName("");
       setPhone10("");
       setOtp("");
@@ -68,15 +177,18 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
   }, [open, clearVerifier]);
 
   useEffect(() => {
-    if (!open || step !== "form") return;
+    if (!open) return;
     const id = window.requestAnimationFrame(() => {
-      nameInputRef.current?.focus();
+      if (step === "phone") phoneInputRef.current?.focus();
+      if (step === "otp") nameInputRef.current?.focus();
     });
     return () => window.cancelAnimationFrame(id);
   }, [open, step]);
 
   useEffect(() => {
     if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     function onKeyDown(e) {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -84,7 +196,10 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
       }
     }
     document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
   }, [open, onClose]);
 
   const ensureVerifier = useCallback(async () => {
@@ -121,14 +236,9 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
 
   const phoneValid = isTenDigitIndiaMobile(phone10);
   const tenDigitsEntered = phone10.length === 10;
-  const getOtpDisabled = !name.trim() || !phoneValid || sending;
 
   const sendOtp = useCallback(async () => {
     setError("");
-    if (!name.trim()) {
-      setError("Please enter your full name.");
-      return;
-    }
     if (!isTenDigitIndiaMobile(phone10)) {
       setError("Enter a valid 10-digit mobile number.");
       return;
@@ -155,7 +265,7 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
     } finally {
       setSending(false);
     }
-  }, [name, phone10, ensureVerifier, clearVerifier]);
+  }, [phone10, ensureVerifier, clearVerifier]);
 
   const verify = useCallback(async () => {
     setError("");
@@ -196,144 +306,141 @@ export default function PhoneLoginSignupModal({ open, onClose, onAuthenticated }
     }
   }, [otp, name, onAuthenticated, onClose]);
 
+  function goToVendorLogin() {
+    onClose();
+    void router.push("/vendor/login");
+  }
+
   if (!open) return null;
 
   return (
     <div
       data-ee-modal="customer-firebase-phone"
-      className="fixed inset-0 z-[130] flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[130] flex items-end justify-center bg-black/45 backdrop-blur-[4px] lg:items-center lg:p-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="auth-modal-title"
+      aria-labelledby={titleId}
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-md min-h-[20rem] overflow-y-auto rounded-2xl border border-stone-200/90 bg-white px-6 pt-5 pb-4 shadow-[0_24px_64px_-24px_rgba(15,23,42,0.35)] transition-all duration-300 ease-out"
+        className="ee-auth-sheet flex max-h-[min(60vh,520px)] w-full max-w-lg flex-col overflow-hidden rounded-t-[20px] bg-white shadow-[0_-16px_48px_-12px_rgba(15,23,42,0.2)] lg:max-h-[85vh] lg:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {step === "form" ? (
-          <div key="form" className="ee-auth-step-animate">
-            <h2 id="auth-modal-title" className="text-xl font-bold tracking-tight text-stone-900">
-              Login or Signup to Continue
-            </h2>
-            <p className="mt-1.5 text-sm text-stone-600">
-              We’ll text you a one-time code (SMS via Firebase — same project as your existing Firebase setup).
-            </p>
+        <div className="flex shrink-0 justify-center pt-4 pb-2" aria-hidden>
+          <div className="h-1 w-9 rounded-full bg-stone-300" />
+        </div>
 
-            <label className="mt-5 block text-sm font-semibold text-stone-800" htmlFor="auth-name">
-              Full name
-            </label>
-            <input
-              ref={nameInputRef}
-              id="auth-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none ring-brand-500/25 focus:border-brand-500 focus:ring-2"
-              placeholder="Your full name"
-              autoComplete="name"
-            />
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1">
+          {step === "phone" ? (
+            <div key="phone" className="ee-auth-step-animate">
+              <h2 id={titleId} className="text-[1.375rem] font-bold leading-tight tracking-tight text-[#222222]">
+                Log in or sign up
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-[#717171]">
+                We&apos;ll send a verification code to confirm your number.
+              </p>
 
-            <label className="mt-4 block text-sm font-semibold text-stone-800" htmlFor="auth-phone">
-              Phone number <span className="text-rose-600">*</span>
-            </label>
-            <div className="mt-1.5 flex items-stretch gap-2 rounded-xl border border-stone-200 bg-stone-50/80 px-3 py-0.5 ring-brand-500/25 focus-within:border-brand-500 focus-within:ring-2">
-              <span className="flex shrink-0 items-center text-sm font-semibold tabular-nums text-stone-600">
-                +91
-              </span>
-              <input
-                id="auth-phone"
-                value={phone10}
-                onChange={onPhoneInput}
-                className="min-w-0 flex-1 border-0 bg-transparent py-2.5 text-sm tabular-nums outline-none ring-0"
-                placeholder="9876543210"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                maxLength={10}
-              />
-            </div>
+              <div className="mt-6">
+                <PhoneInputField value={phone10} onChange={onPhoneInput} inputRef={phoneInputRef} />
+              </div>
 
-            <div id={RECAPTCHA_CONTAINER_ID} className="mt-3 min-h-[1px]" />
+              <div id={RECAPTCHA_CONTAINER_ID} className="sr-only min-h-[1px]" aria-hidden />
 
-            <p className="mt-2 text-xs leading-relaxed text-stone-500">
-              By proceeding, you agree to our{" "}
-              <Link href="/privacy" className="font-semibold text-brand-700 underline-offset-2 hover:underline">
-                Privacy Policy
-              </Link>{" "}
-              and{" "}
-              <Link href="/terms" className="font-semibold text-brand-700 underline-offset-2 hover:underline">
-                Terms of Use
-              </Link>
-              .
-            </p>
+              {error ? <p className="mt-3 text-sm font-medium text-rose-700">{error}</p> : null}
 
-            {error ? <p className="mt-2 text-sm font-medium text-rose-700">{error}</p> : null}
+              <AuthPrimaryButton
+                className="mt-5"
+                disabled={!phoneValid || sending}
+                onClick={() => void sendOtp()}
+              >
+                {sending ? "Sending…" : "Continue"}
+              </AuthPrimaryButton>
 
-            <div className="mt-4 flex min-h-[2.5rem] flex-wrap items-center justify-center gap-2">
-              {tenDigitsEntered ? (
-                <Button
-                  type="button"
-                  className="rounded-xl px-5 transition-opacity duration-200 disabled:pointer-events-none disabled:opacity-40"
-                  disabled={getOtpDisabled}
-                  onClick={() => void sendOtp()}
-                >
-                  {sending ? "Sending…" : "Get OTP"}
-                </Button>
+              {tenDigitsEntered && !phoneValid ? (
+                <p className="mt-2 text-center text-xs text-[#717171]">Use a valid Indian mobile (starts with 6–9).</p>
               ) : null}
+
+              <p className="mt-4 text-center text-[0.6875rem] leading-relaxed text-[#717171]">
+                By continuing, you agree to our{" "}
+                <Link href="/terms" className="font-medium text-[#222222] underline-offset-2 hover:underline">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="font-medium text-[#222222] underline-offset-2 hover:underline">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+
+              <p className="mt-6 pb-1 text-center text-sm text-[#717171]">
+                Own a business?{" "}
+                <button
+                  type="button"
+                  className="font-semibold text-[#0F766E] underline decoration-[#0F766E]/40 underline-offset-[3px] hover:decoration-[#0F766E]"
+                  onClick={goToVendorLogin}
+                >
+                  Sign in as a vendor
+                </button>
+              </p>
             </div>
-            {tenDigitsEntered && !phoneValid ? (
-              <p className="mt-1.5 text-center text-xs text-stone-500">Use a valid Indian mobile (starts with 6–9).</p>
-            ) : tenDigitsEntered && phoneValid && !name.trim() ? (
-              <p className="mt-1.5 text-center text-xs text-stone-500">Enter your full name to enable Get OTP.</p>
-            ) : null}
-          </div>
-        ) : (
-          <form
-            key="otp"
-            className="ee-auth-step-animate"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void verify();
-            }}
-          >
-            <h2 id="auth-modal-title" className="text-xl font-bold tracking-tight text-stone-900">
-              Enter OTP
-            </h2>
-            <p className="mt-2 text-sm text-stone-600">
-              Enter OTP sent to{" "}
-              <span className="font-semibold tabular-nums text-stone-800">{otpPhoneLine}</span>
-            </p>
+          ) : (
+            <form
+              key="otp"
+              className="ee-auth-step-animate"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void verify();
+              }}
+            >
+              <h2 id={titleId} className="text-[1.375rem] font-bold leading-tight tracking-tight text-[#222222]">
+                Enter verification code
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-[#717171]">
+                Sent to{" "}
+                <span className="font-semibold tabular-nums text-[#222222]">{otpPhoneLine}</span>
+              </p>
 
-            <div className="mt-6">
-              <SixDigitOtpInput value={otp} onChange={setOtp} disabled={verifying} />
-            </div>
+              <div className="mt-6">
+                <SixDigitOtpInput value={otp} onChange={setOtp} disabled={verifying} />
+              </div>
 
-            {error ? <p className="mt-4 text-sm font-medium text-rose-700">{error}</p> : null}
+              <div className="mt-4">
+                <AuthTextField
+                  id="auth-name"
+                  placeholder="What's your name?"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                  inputRef={nameInputRef}
+                />
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-[#717171]">
+                Required for new accounts. Returning users can leave blank.
+              </p>
 
-            <div className="mt-6 flex w-full flex-wrap items-center justify-between gap-2">
+              {error ? <p className="mt-3 text-sm font-medium text-rose-700">{error}</p> : null}
+
+              <AuthPrimaryButton type="submit" className="mt-5" disabled={otp.replace(/\D/g, "").length !== 6 || verifying}>
+                {verifying ? "Verifying…" : "Verify & continue"}
+              </AuthPrimaryButton>
+
               <button
                 type="button"
                 disabled={verifying}
                 onClick={() => {
                   confirmationRef.current = null;
                   clearVerifier();
-                  setStep("form");
+                  setStep("phone");
                   setOtp("");
                   setError("");
                 }}
-                className="rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-800 hover:bg-stone-50 disabled:opacity-50"
+                className="mt-4 w-full py-2 text-center text-sm font-medium text-[#717171] transition hover:text-[#222222] disabled:opacity-50"
               >
-                Back
+                Change phone number
               </button>
-              <Button
-                type="submit"
-                className="rounded-xl px-5 disabled:pointer-events-none disabled:opacity-40"
-                disabled={otp.replace(/\D/g, "").length !== 6 || verifying}
-              >
-                {verifying ? "Verifying…" : "Verify"}
-              </Button>
-            </div>
-          </form>
-        )}
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

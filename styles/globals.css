@@ -80,6 +80,34 @@ body {
     padding-right: var(--ee-container-px);
   }
 
+  /* Venue listing card carousel — native momentum + mandatory snap on mobile */
+  .venue-card-carousel {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scroll-snap-stop: always;
+    overscroll-behavior-x: contain;
+    /* Horizontal carousel swipe + vertical page scroll (browser picks axis from gesture) */
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .venue-card-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .venue-card-carousel-slide {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  /* Smooth programmatic scroll on desktop only — avoids rubbery feel on touch */
+  @media (hover: hover) and (pointer: fine) {
+    .venue-card-carousel {
+      scroll-behavior: smooth;
+    }
+  }
+
   /* App shell: flex column, full viewport width (no margin auto) */
   .page-wrapper {
     width: 100%;
@@ -229,4 +257,32 @@ body {
 
 .ee-auth-step-animate {
   animation: ee-auth-step-fade 0.24s ease-out forwards;
+}
+
+@keyframes ee-auth-sheet-up {
+  from {
+    opacity: 0.85;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ee-auth-sheet {
+  animation: ee-auth-sheet-up 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (min-width: 1024px) {
+  @keyframes ee-auth-sheet-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
 }

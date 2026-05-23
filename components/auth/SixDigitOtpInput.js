@@ -51,7 +51,7 @@ export default function SixDigitOtpInput({ value, onChange, disabled = false }) 
           disabled={disabled}
           value={d}
           aria-label={`Digit ${i + 1}`}
-          className="aspect-square h-12 w-12 shrink-0 rounded-lg border border-stone-200 bg-white text-center text-lg font-semibold tabular-nums text-stone-900 outline-none ring-brand-500/25 transition focus:border-brand-500 focus:ring-2 disabled:opacity-50 sm:h-14 sm:w-14"
+          className="aspect-square h-12 w-12 shrink-0 rounded-xl border border-[#DDDDDD] bg-white text-center text-lg font-semibold tabular-nums text-[#222222] outline-none transition duration-200 focus:border-[#1A1A1A] focus:shadow-[0_0_0_3px_rgba(26,26,26,0.06)] disabled:opacity-50 sm:h-14 sm:w-14"
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "").slice(-1);
             if (v) {

@@ -14,9 +14,9 @@ export default function VenueListingPrice({ price, className = "", align = "left
   }
 
   return (
-    <p className={`whitespace-nowrap leading-none ${alignCls} ${className}`.trim()}>
-      <span className="text-[0.9375rem] font-semibold tabular-nums tracking-tight text-[#222222]">{amount}</span>
-      {suffix ? <span className="text-[0.6875rem] font-normal text-[#717171]">{suffix}</span> : null}
+    <p className={`text-[0.9375rem] leading-snug ${alignCls} ${className}`.trim()}>
+      <span className="font-bold tabular-nums tracking-tight text-[#222222]">{amount}</span>
+      {suffix ? <span className="font-normal text-[#717171]">{suffix}</span> : null}
     </p>
   );
 }

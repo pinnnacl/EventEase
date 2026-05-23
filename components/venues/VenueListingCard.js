@@ -1,18 +1,22 @@
 import Link from "next/link";
-import ResponsiveVendorImage from "../images/ResponsiveVendorImage";
+import { useMemo } from "react";
+import { Users } from "lucide-react";
 import WishlistToggle from "../WishlistToggle";
 import { normalizeVenueTitle } from "../../lib/normalizeVenueTitle";
 import { getVenueDistanceDisplay } from "../../lib/venueDistanceLine";
+import { buildVenueListingCarouselSlides } from "../../lib/venueListingCarouselSlides";
 import VenueListingPrice from "./VenueListingPrice";
+import VenueListingImageCarousel from "./VenueListingImageCarousel";
 
-export const VENUE_LISTING_FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1519167758481-83f29da1c0c9?w=1200&q=80";
+export { VENUE_LISTING_FALLBACK_IMAGE } from "../../lib/venueListingCarouselSlides";
 
-/** Fixed image height — full-bleed top section (mobile-first). */
-const IMAGE_HEIGHT_CLASS = "h-[220px] sm:h-[230px]";
-
-const CARD_SHELL =
-  "group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-[#EAEAEA] bg-white transition-colors duration-200 ease-out hover:border-[#D8D8D8]";
+/** Floating card: framed 4:3 image carousel, copy on page background below. */
+const IMAGE_ASPECT = "aspect-[4/3]";
+/** Rounded mask — scroll track inside carousel must not use overflow-hidden on the same node. */
+const IMAGE_FRAME = "relative w-full shrink-0 overflow-hidden rounded-2xl bg-stone-100 group/carousel";
+const LISTING_SHELL = "group flex h-full w-full flex-col";
+/** Gap between framed image and title (12–16px). */
+const CONTENT_GAP = "pt-4";
 
 /**
  * @param {{
@@ -25,6 +29,7 @@ const CARD_SHELL =
  *     state?: string;
  *     profileImage?: string | null;
  *     profileImageResponsive?: { thumb: string; medium: string; large: string } | null;
+ *     galleryImages?: string[] | null;
  *     category?: string;
  *     priceRange?: string;
  *     capacity?: string | null;
@@ -58,13 +63,13 @@ export default function VenueListingCard({
 }) {
   const title = normalizeVenueTitle(vendor.businessName);
   const loc = vendor.place?.trim() || vendor.city?.trim() || "—";
-  const img = vendor.profileImage?.trim() || VENUE_LISTING_FALLBACK_IMAGE;
-  const responsive = vendor.profileImageResponsive;
   const price = vendor.priceRange?.trim() || "Ask for quote";
   const cap = vendor.capacity?.trim() || null;
   const aiDistanceKm = Number(vendor.aiDistanceKm);
   const hasAiDistance = Number.isFinite(aiDistanceKm) && aiDistanceKm >= 0;
   const aiDistanceText = hasAiDistance ? `${aiDistanceKm.toFixed(2)} km away` : "";
+
+  const carouselSlides = useMemo(() => buildVenueListingCarouselSlides(vendor), [vendor]);
 
   const distanceDisplay =
     geoStatus != null
@@ -95,106 +100,79 @@ export default function VenueListingCard({
   const secondary = metaSecondary();
   const showMetaDivider = Boolean(loc && secondary);
 
-  /** Image fills card top edge — no padding, corners clip via card overflow-hidden. */
-  function VenueCardMedia({ linked = true }) {
-    const media = (
-      <>
-        <ResponsiveVendorImage
-          responsive={responsive}
-          src={img}
-          alt=""
-          className="block h-full w-full min-h-full min-w-full object-cover object-center"
-          sizes={imageSizes}
-        />
-        <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-transparent"
-          aria-hidden
-        />
-        {unavailableOnSelectedDate ? (
-          <span className="absolute bottom-3 left-3 z-[1] rounded-lg bg-amber-950/90 px-2.5 py-1 text-[0.625rem] font-semibold uppercase tracking-wide text-white shadow-sm">
-            Booked on your date
-          </span>
-        ) : null}
-      </>
-    );
-
+  function VenueCardMedia() {
     return (
-      <div className={`relative w-full shrink-0 overflow-hidden bg-stone-200 ${IMAGE_HEIGHT_CLASS}`}>
-        {linked ? (
-          <Link
-            href={href}
-            className="relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-stone-400/50"
-          >
-            {media}
-          </Link>
-        ) : (
-          <div className="relative h-full w-full">{media}</div>
-        )}
+      <div className={`${IMAGE_FRAME} ${IMAGE_ASPECT}`}>
+        <VenueListingImageCarousel
+          slides={carouselSlides}
+          href={href}
+          imageSizes={imageSizes}
+          alt={title}
+          unavailableOnSelectedDate={unavailableOnSelectedDate}
+        />
         {showWishlistToggle ? (
-          <WishlistToggle venueId={vendor.id} iconOnly className="absolute right-3 top-3 z-10" />
+          <WishlistToggle
+            venueId={vendor.id}
+            variant="overlay"
+            iconOnly
+            className="absolute right-3 top-3 z-10 sm:right-4 sm:top-4"
+          />
         ) : null}
       </div>
     );
   }
 
-  function VenueCardBody({ TitleTag = "h2", asLink = true }) {
-    const body = (
-      <div className="flex flex-col gap-2 px-4 py-4">
-        <div className="flex items-start justify-between gap-4">
-          <TitleTag className="min-w-0 flex-1 font-sans text-[0.9375rem] font-semibold leading-snug tracking-tight text-[#222222]">
-            {title}
-          </TitleTag>
-          <VenueListingPrice price={price} align="right" className="shrink-0" />
-        </div>
+  function VenueCardCopy({ TitleTag = "h2" }) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <TitleTag className="font-sans text-base font-bold leading-snug tracking-tight text-[#222222]">
+          {title}
+        </TitleTag>
 
-        <div className="flex min-h-[1.125rem] items-center justify-between gap-3">
-          <p className="min-w-0 truncate text-[0.8125rem] font-normal leading-relaxed text-[#717171]">
-            {loc}
-            {showMetaDivider ? (
-              <>
-                <span className="mx-1.5 text-[#D4D4D4]" aria-hidden>
-                  •
-                </span>
-                <span className="tabular-nums text-[#717171]">{secondary}</span>
-              </>
-            ) : secondary ? (
-              <span className="tabular-nums text-[#717171]"> {secondary}</span>
-            ) : null}
-          </p>
-          {cap ? (
-            <span className="shrink-0 text-[0.6875rem] font-normal text-[#717171]">{cap}</span>
+        <p className="text-sm font-normal leading-snug text-[#717171]">
+          {loc}
+          {showMetaDivider ? (
+            <>
+              <span className="mx-1.5 text-[#D4D4D4]" aria-hidden>
+                •
+              </span>
+              <span className="tabular-nums">{secondary}</span>
+            </>
+          ) : secondary ? (
+            <span className="tabular-nums"> {secondary}</span>
           ) : null}
+        </p>
+
+        {cap ? (
+          <p className="flex items-center gap-1.5 text-sm font-normal text-[#717171]">
+            <Users className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+            <span className="tabular-nums leading-none">{cap}</span>
+            <span className="sr-only">guest capacity</span>
+          </p>
+        ) : null}
+
+        <div className="pt-0.5">
+          <VenueListingPrice price={price} align="left" />
         </div>
       </div>
     );
+  }
 
-    if (!asLink) return body;
-
+  function VenueCardBody({ TitleTag = "h2" }) {
     return (
       <Link
         href={href}
-        className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-stone-400/40"
+        className={`block ${CONTENT_GAP} focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-400/40 focus-visible:ring-offset-2`}
       >
-        {body}
-      </Link>
-    );
-  }
-
-  if (variant === "featured") {
-    return (
-      <Link href={href} className="block h-full w-full text-left">
-        <article className={CARD_SHELL}>
-          <VenueCardMedia linked={false} />
-          <VenueCardBody TitleTag="h3" asLink={false} />
-        </article>
+        <VenueCardCopy TitleTag={TitleTag} />
       </Link>
     );
   }
 
   return (
-    <article className={CARD_SHELL}>
+    <article className={LISTING_SHELL}>
       <VenueCardMedia />
-      <VenueCardBody />
+      <VenueCardBody TitleTag={variant === "featured" ? "h3" : "h2"} />
     </article>
   );
 }

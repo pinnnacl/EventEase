@@ -58,7 +58,7 @@ export default function VenuesPage({ vendors = [], loadError = false }) {
                 No venues available yet.
               </p>
             ) : (
-              <ul className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
+              <ul className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-7 lg:grid-cols-3 lg:gap-7 xl:grid-cols-4">
                 {displayedVenues.map((venue) => (
                   <li key={venue.id} id={venue.id} className="scroll-mt-44 sm:scroll-mt-52">
                     <VenueListingCard

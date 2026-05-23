@@ -413,6 +413,83 @@ function StickySegmentedSearch() {
 }
 
 /**
+ * AI search feedback + result grid (shared by desktop hero and mobile results strip).
+ */
+function HomeAiResultsContent({ aiUnavailable, aiError, aiLoading, aiResults, aiAnswer, aiPlan }) {
+  if (aiUnavailable) {
+    return (
+      <div className="rounded-2xl border border-[#0F766E]/18 bg-gradient-to-br from-teal-50/80 via-white to-white px-5 py-4 shadow-[0_10px_30px_-22px_rgba(15,118,110,0.35)] sm:px-6 sm:py-5">
+        <div className="flex items-start gap-3">
+          <span
+            aria-hidden
+            className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0F766E]/10 text-[#0F766E]"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12l.7 2.1L8 15l-2.3.9L5 18l-.7-2.1L2 15l2.3-.9L5 12z" />
+            </svg>
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold tracking-tight text-[#0F172A] sm:text-[0.9375rem]">
+              AI search is taking a quick break
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              We’re fine-tuning the AI matching engine for this environment. In the meantime, you can browse curated
+              venues and services with our regular search.
+            </p>
+            <Link
+              href="/venues"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_18px_-12px_rgba(15,118,110,0.55)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#0E6A64] hover:shadow-[0_12px_24px_-12px_rgba(15,118,110,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/35 focus-visible:ring-offset-2 active:translate-y-0 sm:text-[0.8125rem]"
+            >
+              Browse venues
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (aiError) {
+    return (
+      <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">{aiError}</p>
+    );
+  }
+
+  if (aiLoading) {
+    return (
+      <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600">Curating results with AI...</p>
+    );
+  }
+
+  if (aiResults.length === 0) {
+    return (
+      <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600">
+        No matches yet. Try a different style prompt.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {aiPlan ? <AiWeddingPlanPanel plan={aiPlan} /> : null}
+      {aiAnswer ? (
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
+          {aiAnswer}
+        </p>
+      ) : null}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {aiResults.map((row, idx) => (
+          <AiVendorResultTile key={`${row?.vendorId || row?.mediaId || "m"}-${idx}`} row={row} idx={idx} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
  * @param {{ headerEl: HTMLElement | null }} props
  */
 export default function AiSearchExperience({ headerEl }) {
@@ -477,20 +554,29 @@ export default function AiSearchExperience({ headerEl }) {
     aiInputRef,
   } = homeAi;
 
+  const resultsPanel = aiSearched ? (
+    <HomeAiResultsContent
+      aiUnavailable={aiUnavailable}
+      aiError={aiError}
+      aiLoading={aiLoading}
+      aiResults={aiResults}
+      aiAnswer={aiAnswer}
+      aiPlan={aiPlan}
+    />
+  ) : null;
+
   return (
     <>
-      <section className="relative isolate w-full border-0 bg-transparent shadow-none">
-        <div className="pointer-events-none absolute top-0 left-1/2 -z-10 w-screen -translate-x-1/2" aria-hidden>
+      {/* Desktop: banner hero + in-flow AI search */}
+      <section className="relative isolate hidden w-full overflow-hidden border-0 bg-transparent shadow-none lg:block">
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10" aria-hidden>
           <img src={bannerImage.src} alt="" className="h-auto w-full object-cover object-center" />
         </div>
         <div className={`grid transition-[grid-template-rows] ${TRANSITION} grid-rows-[1fr]`}>
           <div className="min-h-0 overflow-hidden">
-            <div
-              className={`px-container-fluid transition ${TRANSITION} translate-y-0 pb-1 pt-0 opacity-100 sm:pb-4 lg:pt-16 lg:pb-12`}
-            >
+            <div className={`px-container-fluid transition ${TRANSITION} pb-12 pt-16 opacity-100`}>
               <div className={`mx-auto w-full max-w-4xl transition ${TRANSITION} will-change-transform scale-100`}>
-                {/* Desktop only: hero copy + in-flow AI bar (mobile uses header AI strip) */}
-                <div className="mx-auto mb-6 hidden max-w-3xl text-center lg:mb-7 lg:block">
+                <div className="mx-auto mb-7 max-w-3xl text-center">
                   <h1 className="font-display text-[36px] font-semibold leading-tight tracking-tight text-[#0F172A]">
                     Plan your dream wedding with AI
                   </h1>
@@ -498,97 +584,31 @@ export default function AiSearchExperience({ headerEl }) {
                     Tell us your style, date, and budget — we’ll curate venues and services that fit.
                   </p>
                 </div>
-                <div className="hidden lg:block">
-                  <AiSearchHeroBar
-                    value={aiPrompt}
-                    onChange={setAiPrompt}
-                    onSubmit={runAiSearch}
-                    loading={aiLoading}
-                    inputRef={null}
-                  />
-                </div>
-                {/* Quick suggestion chips: desktop only (mobile keeps focus on header AI bar + CTA) */}
-                <div className="mt-4 hidden lg:block">
+                <AiSearchHeroBar
+                  value={aiPrompt}
+                  onChange={setAiPrompt}
+                  onSubmit={runAiSearch}
+                  loading={aiLoading}
+                  inputRef={null}
+                />
+                <div className="mt-4">
                   <SearchSuggestions onSelect={handleSuggestionSelect} />
                 </div>
-                {aiSearched ? (
-                  <div className="mt-4 lg:mt-5">
-                    {/* ------------------------------------------------------------------
-                     * Graceful "AI offline" panel.
-                     *
-                     * Shown when the backend reports Weaviate is not configured for this
-                     * environment (e.g. local dev without a vector DB). We deliberately
-                     * use a soft teal/stone palette — NOT the rose error palette below —
-                     * because this is an operator setup gap, not a user-facing failure.
-                     * The CTA points users at the deterministic /venues listing so they
-                     * can keep browsing while AI search is being wired up.
-                     * ------------------------------------------------------------------ */}
-                    {aiUnavailable ? (
-                      <div className="rounded-2xl border border-[#0F766E]/18 bg-gradient-to-br from-teal-50/80 via-white to-white px-5 py-4 shadow-[0_10px_30px_-22px_rgba(15,118,110,0.35)] sm:px-6 sm:py-5">
-                        <div className="flex items-start gap-3">
-                          <span
-                            aria-hidden
-                            className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0F766E]/10 text-[#0F766E]"
-                          >
-                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12l.7 2.1L8 15l-2.3.9L5 18l-.7-2.1L2 15l2.3-.9L5 12z" />
-                            </svg>
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold tracking-tight text-[#0F172A] sm:text-[0.9375rem]">
-                              AI search is taking a quick break
-                            </p>
-                            <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                              We’re fine-tuning the AI matching engine for this environment. In the meantime,
-                              you can browse curated venues and services with our regular search.
-                            </p>
-                            <Link
-                              href="/venues"
-                              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_18px_-12px_rgba(15,118,110,0.55)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#0E6A64] hover:shadow-[0_12px_24px_-12px_rgba(15,118,110,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/35 focus-visible:ring-offset-2 active:translate-y-0 sm:text-[0.8125rem]"
-                            >
-                              Browse venues
-                              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 6l6 6-6 6" />
-                              </svg>
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    ) : aiError ? (
-                      <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">
-                        {aiError}
-                      </p>
-                    ) : aiLoading ? (
-                      <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600">
-                        Curating results with AI...
-                      </p>
-                    ) : aiResults.length === 0 ? (
-                      <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600">
-                        No matches yet. Try a different style prompt.
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {aiPlan ? <AiWeddingPlanPanel plan={aiPlan} /> : null}
-                        {aiAnswer ? (
-                          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
-                            {aiAnswer}
-                          </p>
-                        ) : null}
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {aiResults.map((row, idx) => (
-                            <AiVendorResultTile key={`${row?.vendorId || row?.mediaId || "m"}-${idx}`} row={row} idx={idx} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : null}
+                {resultsPanel ? <div className="mt-5">{resultsPanel}</div> : null}
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Mobile: AI lives in sticky header; only show results below header when user has searched */}
+      {resultsPanel ? (
+        <section className="w-full min-w-0 overflow-hidden lg:hidden" aria-live="polite">
+          <div className="px-container-fluid pb-2 pt-2">
+            <div className="mx-auto w-full max-w-4xl min-w-0">{resultsPanel}</div>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

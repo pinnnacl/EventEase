@@ -20,13 +20,10 @@ export default async function handler(req, res) {
 
   const body = parsePagesApiJsonBody(req);
   const idToken = typeof body.idToken === "string" ? body.idToken.trim() : "";
-  const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
+  const nameFromBody = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
   const locationRaw = typeof body.location === "string" ? body.location.trim().slice(0, 200) : "";
   const location = locationRaw || null;
 
-  if (!name) {
-    return res.status(400).json({ ok: false, error: "Please enter your full name." });
-  }
   if (!idToken) {
     return res.status(400).json({ ok: false, error: "Missing authentication token." });
   }
@@ -45,6 +42,20 @@ export default async function handler(req, res) {
     return res.status(401).json({ ok: false, error: "Invalid or expired sign-in. Try again." });
   }
 
+  const db = getCustomerAuthDb();
+  let name = nameFromBody;
+  if (!name) {
+    try {
+      const row = db.prepare(`SELECT name FROM customers WHERE phone_digits = ?`).get(phoneDigits);
+      name = typeof row?.name === "string" ? row.name.trim() : "";
+    } catch {
+      /* fall through */
+    }
+  }
+  if (!name) {
+    return res.status(400).json({ ok: false, error: "Please enter your full name." });
+  }
+
   let callbackPass;
   try {
     callbackPass = mintCallbackPassForPhoneDigits(phoneDigits);
@@ -56,15 +67,14 @@ export default async function handler(req, res) {
     });
   }
 
-  const db = getCustomerAuthDb();
   const now = Date.now();
   try {
     db.prepare(
       `INSERT INTO customers (phone_digits, name, location, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(phone_digits) DO UPDATE SET
-         name = excluded.name,
-         location = excluded.location,
+         name = CASE WHEN excluded.name != '' THEN excluded.name ELSE customers.name END,
+         location = COALESCE(excluded.location, customers.location),
          updated_at = excluded.updated_at`,
     ).run(phoneDigits, name, location || null, now, now);
   } catch (e) {
