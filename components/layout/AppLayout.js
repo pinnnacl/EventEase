@@ -423,14 +423,16 @@ export default function AppLayout({ children }) {
       )}
 
       <div
-        className={`flex min-w-0 w-full flex-1 flex-col overflow-x-hidden pb-[calc(5.25rem+env(safe-area-inset-bottom))] lg:overflow-x-visible lg:pb-0 ${
-          isHome ? "pt-0" : ""
-        }`}
+        className={`flex min-w-0 w-full flex-1 flex-col overflow-x-hidden lg:overflow-x-visible lg:pb-0 ${
+          isVenueDetailRoute || isPhotographyDetailRoute
+            ? "pb-0"
+            : "pb-[calc(5.25rem+env(safe-area-inset-bottom))]"
+        } ${isHome ? "pt-0" : ""}`}
       >
         {children}
       </div>
 
-      <MobileBottomNav />
+      {isVenueDetailRoute || isPhotographyDetailRoute ? null : <MobileBottomNav />}
     </div>
   );
 }

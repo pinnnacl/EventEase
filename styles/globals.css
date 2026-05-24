@@ -80,6 +80,11 @@ body {
     padding-right: var(--ee-container-px);
   }
 
+  /* Muted map skin on venue detail */
+  .venue-map-embed {
+    filter: grayscale(0.85) contrast(0.95) saturate(0.7);
+  }
+
   /* Venue listing card carousel — native momentum + mandatory snap on mobile */
   .venue-card-carousel {
     -webkit-overflow-scrolling: touch;

@@ -1,7 +1,5 @@
 import { getVenueDistanceDisplay } from "../../lib/venueDistanceLine";
 
-const muted = "text-[0.8125rem] font-normal text-stone-500";
-
 /**
  * Read-only distance from viewer to venue (venue coords come from admin / DB).
  * Straight-line (Haversine), not driving distance.
@@ -15,6 +13,7 @@ const muted = "text-[0.8125rem] font-normal text-stone-500";
  *   status: 'loading' | 'ready' | 'unsupported' | 'unavailable';
  *   usedFallback?: boolean;
  *   className?: string;
+ *   tone?: "default" | "soft";
  * }} props
  */
 export default function VenueDistanceText({
@@ -26,7 +25,12 @@ export default function VenueDistanceText({
   status,
   usedFallback = false,
   className = "",
+  tone = "default",
 }) {
+  const muted =
+    tone === "soft"
+      ? "text-[0.75rem] font-normal leading-snug text-[#666666]"
+      : "text-[0.8125rem] font-normal text-stone-500";
   const { line, loading, hint } = getVenueDistanceDisplay({
     venueLat,
     venueLng,

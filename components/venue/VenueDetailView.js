@@ -1,19 +1,28 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LayoutGrid } from "lucide-react";
 import ResponsiveVendorImage from "../images/ResponsiveVendorImage";
 import VenueDistanceText from "../venues/VenueDistanceText";
+import useVenueInquire from "../../hooks/useVenueInquire";
+import { useUserGeolocation } from "../../hooks/useUserGeolocation";
+import { buildVenueHighlights } from "../../lib/buildVenueHighlights";
+import { formatVenuePriceDisplay } from "../../lib/formatVenuePrice";
+import { isValidYmd } from "../../lib/eventDateYmd";
+import { parseVenueProximityPoints } from "../../lib/parseVenueProximity";
+import { readStoredEventDateYmd } from "../../lib/wishlistActions";
+import { getPublicVenueDetailRows } from "../../lib/venueDetails";
 import AmenityChips from "./AmenityChips";
-import PricingCard from "./PricingCard";
 import ReviewList from "./ReviewList";
 import SectionContainer from "./SectionContainer";
 import SectionTabs from "./SectionTabs";
+import VenueDetailStickyBar from "./VenueDetailStickyBar";
 import VenueGallery from "./VenueGallery";
-import { useUserGeolocation } from "../../hooks/useUserGeolocation";
-import { isValidYmd } from "../../lib/eventDateYmd";
-import { readStoredEventDateYmd } from "../../lib/wishlistActions";
-import { getPublicVenueDetailRows } from "../../lib/venueDetails";
 import VenueDetailsRows from "./VenueDetailsRows";
+import VenueHighlightsGrid from "./VenueHighlightsGrid";
+import VenueMapEmbed from "./VenueMapEmbed";
+import VenuePricingPremium from "./VenuePricingPremium";
+import VenueProximityList from "./VenueProximityList";
 
 function IconUsers({ className }) {
   return (
@@ -377,6 +386,107 @@ export default function VenueDetailView({
   }, [venue.id, sectionTabsForNav]);
 
   const priceDisplay = venue.priceRange?.trim() || "Ask for quote";
+  const priceFormatted = useMemo(() => formatVenuePriceDisplay(priceDisplay), [priceDisplay]);
+  const glanceHighlights = useMemo(() => (isVenue ? buildVenueHighlights(venue) : []), [isVenue, venue]);
+  const proximityPoints = useMemo(() => parseVenueProximityPoints(venue), [venue]);
+  const { inquire, sending: inquireSending, notice: inquireNotice } = useVenueInquire({
+    vendorId: venue.id,
+    vendorName: venue.businessName,
+    demo,
+  });
+
+  const scrollToPricing = useCallback(() => scrollToSection("venue-section-pricing"), [scrollToSection]);
+  const scrollToPhotos = useCallback(() => scrollToSection("venue-section-photos"), [scrollToSection]);
+  const heroTouchRef = useRef({ startX: 0 });
+
+  const onHeroTouchStart = useCallback((e) => {
+    heroTouchRef.current.startX = e.changedTouches[0]?.clientX ?? 0;
+  }, []);
+
+  const onHeroTouchEnd = useCallback(
+    (e) => {
+      if (images.length <= 1) return;
+      const endX = e.changedTouches[0]?.clientX ?? 0;
+      const dx = endX - heroTouchRef.current.startX;
+      if (Math.abs(dx) < 48) return;
+      if (dx < 0) next();
+      else prev();
+    },
+    [images.length, next, prev],
+  );
+
+  function HeroImage({ className = "" }) {
+    return images[0] ? (
+      <ResponsiveVendorImage
+        responsive={heroResponsive}
+        src={images[carousel] || images[0]}
+        alt=""
+        className={className}
+        sizes="100vw"
+        loading={carousel === 0 ? "eager" : "lazy"}
+        fetchPriority={carousel === 0 ? "high" : "low"}
+      />
+    ) : (
+      <div className={`flex items-center justify-center bg-stone-200 text-sm text-stone-500 ${className}`}>
+        No image
+      </div>
+    );
+  }
+
+  /** Mobile: swipe only + counter + thin progress bar (no arrow clutter). */
+  function MobileHeroCarouselChrome() {
+    if (images.length <= 1) return null;
+    const progress = ((carousel + 1) / images.length) * 100;
+    return (
+      <>
+        <span className="absolute left-4 top-4 z-10 rounded-full bg-black/40 px-2.5 py-1 text-[0.6875rem] font-medium tabular-nums text-white/95 backdrop-blur-[2px]">
+          {carousel + 1} / {images.length}
+        </span>
+        <div className="absolute inset-x-0 bottom-0 z-10 h-[2px] bg-white/25" aria-hidden>
+          <div
+            className="h-full bg-white/90 transition-[width] duration-300 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </>
+    );
+  }
+
+  /** Desktop: arrows + dot indicators. */
+  function DesktopHeroCarouselControls() {
+    if (images.length <= 1) return null;
+    return (
+      <>
+        <button
+          type="button"
+          onClick={prev}
+          className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md transition hover:bg-white"
+          aria-label="Previous image"
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          onClick={next}
+          className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md transition hover:bg-white sm:right-5"
+          aria-label="Next image"
+        >
+          ›
+        </button>
+        <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-1.5 sm:bottom-10">
+          {images.slice(0, 5).map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`Go to slide ${i + 1}`}
+              onClick={() => setCarousel(i)}
+              className={`h-2 rounded-full transition ${carousel === i ? "w-6 bg-white" : "w-2 bg-white/50"}`}
+            />
+          ))}
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="w-full bg-white text-slate-800">
@@ -389,163 +499,170 @@ export default function VenueDetailView({
           see after approval.
         </div>
       ) : null}
-      {/* Hero — full-width banner + floating info card (~10–15% of image height overlap) */}
-      <section className="relative border-b border-stone-200/80 bg-white">
-        <div className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
-          {/* Outer: bottom padding only — card is positioned vs image wrapper below */}
+      {/* Mobile: full-bleed immersive hero */}
+      <section className="relative bg-white lg:hidden">
+        <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">
+          <div
+            className="relative aspect-[4/5] max-h-[min(78vh,520px)] w-full overflow-hidden bg-stone-200 touch-pan-y"
+            onTouchStart={onHeroTouchStart}
+            onTouchEnd={onHeroTouchEnd}
+          >
+            <HeroImage className="h-full w-full object-cover object-center transition duration-500 ease-out" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/40 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
+            <MobileHeroCarouselChrome />
+            {images.length > 0 ? (
+              <button
+                type="button"
+                onClick={scrollToPhotos}
+                className="absolute bottom-5 right-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-4 py-2 text-[0.8125rem] font-medium text-stone-900 shadow-md ring-1 ring-black/[0.06] backdrop-blur-sm"
+              >
+                <LayoutGrid className="h-[0.875rem] w-[0.875rem]" strokeWidth={1.25} aria-hidden />
+                View all photos ({images.length})
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-6xl px-5 pb-8 pt-7">
+          <p className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#0F766E]">{heroEyebrow}</p>
+
+          <div className="mt-2">
+            <h1 className="font-display text-[1.65rem] font-medium leading-[1.2] tracking-tight text-stone-900">
+              {venue.businessName}
+            </h1>
+            <p className="mt-1 text-[0.8125rem] font-normal leading-snug text-[#666666]">
+              {primaryPlaceLabel || locationLabel || "Kerala"}
+            </p>
+            <VenueDistanceText
+              venueLat={venue.lat}
+              venueLng={venue.lng}
+              viewerLat={geo.viewerLat}
+              viewerLng={geo.viewerLng}
+              viewerAccuracyM={geo.viewerAccuracyM}
+              status={geo.status}
+              usedFallback={geo.usedFallback}
+              tone="soft"
+              className="mt-0.5 block"
+            />
+          </div>
+
+          <div className="mt-8 border-t border-stone-100 pt-7">
+            <p className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#666666]">Rates</p>
+            <p className="font-display mt-2 text-xl font-medium leading-snug tracking-tight text-stone-900">
+              {priceFormatted.headline}
+            </p>
+            {priceFormatted.subline ? (
+              <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-[#666666]">{priceFormatted.subline}</p>
+            ) : null}
+          </div>
+
+          {isVenue && glanceHighlights.length ? (
+            <div className="mt-8">
+              <VenueHighlightsGrid items={glanceHighlights} />
+            </div>
+          ) : null}
+
+          {effectiveYmd && !demo ? (
+            availabilityPending ? (
+              <p className="mt-6 text-sm text-stone-600">Checking availability for {eventDateLabel}…</p>
+            ) : unavailableOnSelectedDate ? (
+              <div
+                className="mt-6 rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950"
+                role="status"
+              >
+                Not available on <span className="whitespace-nowrap">{eventDateLabel}</span>.
+              </div>
+            ) : null
+          ) : null}
+        </div>
+      </section>
+
+      {/* Desktop: floating card hero */}
+      <section className="relative hidden border-b border-stone-200/80 bg-white lg:block">
+        <div className="mx-auto w-full max-w-6xl px-4 pt-8 lg:px-8">
           <div className="pb-[clamp(6rem,16vw,8.5rem)]">
             <div className="relative">
               <div className="relative overflow-hidden rounded-2xl bg-slate-200 shadow-[0_12px_40px_-20px_rgba(15,23,42,0.25)] ring-1 ring-stone-200/60">
-                <div className="relative min-h-[min(72vh,420px)] w-full sm:min-h-[320px] lg:aspect-[2.2/1] lg:min-h-0">
-                {images[0] ? (
-                  <ResponsiveVendorImage
-                    responsive={heroResponsive}
-                    src={images[carousel] || images[0]}
-                    alt=""
-                    className="h-full min-h-[min(72vh,420px)] w-full object-cover object-center transition duration-500 ease-out sm:min-h-[320px] lg:min-h-full"
-                    sizes="(max-width: 1280px) 100vw, 1152px"
-                    loading={carousel === 0 ? "eager" : "lazy"}
-                    fetchPriority={carousel === 0 ? "high" : "low"}
-                  />
-                ) : (
-                  <div className="flex h-full min-h-[280px] items-center justify-center bg-slate-200 text-sm text-slate-500">
-                    No image
+                <div className="relative aspect-[2.2/1] w-full">
+                  <HeroImage className="h-full w-full object-cover object-center transition duration-500 ease-out" />
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/35 to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/50 via-black/15 to-transparent" />
+                  <div className="pointer-events-auto absolute right-5 top-5 z-10">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-md ring-1 ring-white/40">
+                      <IconStar className="h-3.5 w-3.5 text-amber-500" aria-hidden />
+                      THAALI
+                    </span>
                   </div>
-                )}
-                {/* Light vignette: readability for badge & carousel; details live on card */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/35 to-transparent" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/50 via-black/15 to-transparent" />
-
-                <div className="pointer-events-auto absolute right-3 top-3 z-10 sm:right-5 sm:top-5">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-md ring-1 ring-white/40">
-                    <IconStar className="h-3.5 w-3.5 text-amber-500" aria-hidden />
-                    THAALI
-                  </span>
-                </div>
-
-                {images.length > 1 ? (
-                  <>
+                  <DesktopHeroCarouselControls />
+                  {images.length > 0 ? (
                     <button
                       type="button"
-                      onClick={prev}
-                      className="absolute left-3 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md transition hover:bg-white sm:top-1/2"
-                      aria-label="Previous image"
+                      onClick={scrollToPhotos}
+                      className="absolute bottom-5 right-5 z-10 inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-sm font-medium text-stone-900 shadow-lg ring-1 ring-white/50"
                     >
-                      ‹
+                      <LayoutGrid className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                      View all photos ({images.length})
                     </button>
-                    <button
-                      type="button"
-                      onClick={next}
-                      className="absolute right-3 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md transition hover:bg-white sm:right-5 sm:top-1/2"
-                      aria-label="Next image"
-                    >
-                      ›
-                    </button>
-                    <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-1.5 sm:bottom-10">
-                      {images.slice(0, 5).map((_, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          aria-label={`Go to slide ${i + 1}`}
-                          onClick={() => setCarousel(i)}
-                          className={`h-2 rounded-full transition ${carousel === i ? "w-6 bg-white" : "w-2 bg-white/50"}`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            </div>
-
-            {/* Floating panel: top at ~88% of image height ⇒ ~12% of image covered by card */}
-            <div className="pointer-events-none absolute inset-x-0 top-[88%] z-20 flex justify-center px-3 sm:px-4">
-              <div className="pointer-events-auto w-full max-w-4xl">
-                <div className="rounded-2xl border border-slate-200/90 bg-white/90 px-5 py-5 shadow-[0_24px_56px_-16px_rgba(15,23,42,0.2),0_8px_24px_-12px_rgba(15,23,42,0.1)] backdrop-blur-md sm:rounded-[1.25rem] sm:px-8 sm:py-6">
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
-                    <div className="min-w-0 flex-1 lg:max-w-[min(100%,28rem)]">
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#0F766E] sm:text-xs">
-                        {heroEyebrow}
-                      </p>
-                      <h1 className="font-display mt-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-3xl lg:text-[2rem]">
-                        {venue.businessName}
-                      </h1>
-                    </div>
-
-                    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-stretch lg:flex-nowrap lg:justify-end">
-                      {isVenue ? (
-                        <div className="flex min-w-0 flex-1 items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3 ring-1 ring-slate-200/70 sm:min-w-[9.5rem] sm:flex-initial lg:py-3.5">
-                          <IconUsers className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
-                          <div className="min-w-0">
-                            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Capacity</p>
-                            <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-[0.9375rem]">
-                              {venue.capacity?.trim() || "On request"}
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex min-w-0 flex-1 items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3 ring-1 ring-slate-200/70 sm:min-w-[9.5rem] sm:flex-initial lg:py-3.5">
-                          <IconPhone className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
-                          <div className="min-w-0">
-                            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Contact</p>
-                            <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-[0.9375rem]">
-                              {venue.phone?.trim() || "On inquiry"}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex min-w-0 flex-1 items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3 ring-1 ring-slate-200/70 sm:min-w-[9.5rem] sm:flex-initial lg:py-3.5">
-                        <IconTag className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
-                        <div className="min-w-0">
-                          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Price</p>
-                          <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-[0.9375rem]">
-                            {venue.priceRange?.trim() || "Ask for quote"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex min-w-[0] flex-1 items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3 ring-1 ring-slate-200/70 sm:min-w-[11rem] sm:flex-initial lg:max-w-[14rem] lg:py-3.5">
-                        <IconMapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
-                        <div className="min-w-0">
-                          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Location</p>
-                          <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900 sm:text-[0.9375rem]">
-                            {primaryPlaceLabel || <span className="font-medium text-slate-400">Area not listed</span>}
-                          </p>
-                          <VenueDistanceText
-                            venueLat={venue.lat}
-                            venueLng={venue.lng}
-                            viewerLat={geo.viewerLat}
-                            viewerLng={geo.viewerLng}
-                            viewerAccuracyM={geo.viewerAccuracyM}
-                            status={geo.status}
-                            usedFallback={geo.usedFallback}
-                            className="mt-2"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {effectiveYmd && !demo ? (
-                    availabilityPending ? (
-                      <p className="mt-5 border-t border-slate-200/80 pt-4 text-sm text-slate-600">
-                        Checking availability for {eventDateLabel}…
-                      </p>
-                    ) : unavailableOnSelectedDate ? (
-                      <div
-                        className="mt-5 rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950"
-                        role="status"
-                      >
-                        Not available on <span className="whitespace-nowrap">{eventDateLabel}</span> —{" "}
-                        {isVenue ? "the host has" : "the vendor has"} marked this date as booked or blocked.
-                      </div>
-                    ) : null
                   ) : null}
+                </div>
+              </div>
+
+              <div className="pointer-events-none absolute inset-x-0 top-[88%] z-20 flex justify-center px-4">
+                <div className="pointer-events-auto w-full max-w-4xl">
+                  <div className="rounded-[1.25rem] border border-slate-200/90 bg-white/90 px-8 py-6 shadow-[0_24px_56px_-16px_rgba(15,23,42,0.2)] backdrop-blur-md">
+                    <div className="flex items-center justify-between gap-10">
+                      <div className="min-w-0 flex-1 max-w-[28rem]">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#0F766E]">{heroEyebrow}</p>
+                        <h1 className="font-display mt-2 text-[2rem] font-semibold leading-tight tracking-tight text-slate-900">
+                          {venue.businessName}
+                        </h1>
+                      </div>
+                      <div className="flex flex-nowrap items-stretch justify-end gap-4">
+                        {isVenue ? (
+                          <div className="flex min-w-[9.5rem] items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3.5 ring-1 ring-slate-200/70">
+                            <IconUsers className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
+                            <div>
+                              <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Capacity</p>
+                              <p className="mt-0.5 text-[0.9375rem] font-semibold text-slate-900">
+                                {venue.capacity?.trim() || "On request"}
+                              </p>
+                            </div>
+                          </div>
+                        ) : null}
+                        <div className="flex min-w-[9.5rem] items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3.5 ring-1 ring-slate-200/70">
+                          <IconTag className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
+                          <div>
+                            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Rates</p>
+                            <p className="mt-0.5 text-[0.9375rem] font-semibold text-slate-900">{priceFormatted.headline}</p>
+                          </div>
+                        </div>
+                        <div className="flex max-w-[14rem] min-w-[11rem] items-start gap-3 rounded-xl bg-slate-50/90 px-4 py-3.5 ring-1 ring-slate-200/70">
+                          <IconMapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
+                          <div className="min-w-0">
+                            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-500">Location</p>
+                            <p className="mt-0.5 text-[0.9375rem] font-semibold leading-snug text-slate-900">
+                              {primaryPlaceLabel || <span className="font-medium text-slate-400">Area not listed</span>}
+                            </p>
+                            <VenueDistanceText
+                              venueLat={venue.lat}
+                              venueLng={venue.lng}
+                              viewerLat={geo.viewerLat}
+                              viewerLng={geo.viewerLng}
+                              viewerAccuracyM={geo.viewerAccuracyM}
+                              status={geo.status}
+                              usedFallback={geo.usedFallback}
+                              className="mt-2"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </section>
 
@@ -556,51 +673,48 @@ export default function VenueDetailView({
           </div>
         </div>
 
-        <div className="mx-auto max-w-6xl space-y-14 px-4 py-10 pb-28 sm:space-y-16 sm:px-6 sm:pb-32 lg:px-8 lg:py-12">
+        <div className="mx-auto max-w-6xl space-y-16 px-4 py-10 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:space-y-20 sm:px-6 lg:px-8 lg:py-14 lg:pb-32">
           <SectionContainer
             id="venue-section-about"
             title={
-              <span className="flex items-center gap-2">
-                <IconLines className="h-6 w-6 shrink-0 text-[#0F766E]" aria-hidden />
-                {isVenue ? "About the space" : "About"}
+              <span className="font-display text-2xl font-semibold tracking-tight text-stone-900 sm:text-[1.65rem]">
+                {isVenue ? "The experience" : "About"}
               </span>
             }
           >
-            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-start">
-              <div>
-                <p className="whitespace-pre-line text-base leading-relaxed text-slate-600">
+            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 lg:items-start">
+              <div className="space-y-8">
+                <p className="whitespace-pre-line text-base leading-[1.75] text-stone-600">
                   {venue.description?.trim() ||
                     (isVenue
                       ? "This venue is listed on THAALI. Contact the host for full details, packages, and availability."
                       : "This vendor is listed on THAALI. Review pricing and portfolio details below.")}
                 </p>
                 {highlights.length ? (
-                  <ul className="mt-6 space-y-2">
+                  <ul className="space-y-3">
                     {highlights.map((h) => (
-                      <li key={h} className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                      <li key={h} className="flex items-center gap-3 text-sm font-medium text-stone-800">
                         <IconCheck className="h-4 w-4 shrink-0 text-[#0F766E]" aria-hidden />
                         {h}
                       </li>
                     ))}
                   </ul>
                 ) : null}
+                {proximityPoints.length ? <VenueProximityList points={proximityPoints} /> : null}
               </div>
               <div>
-                <h3 className="flex items-center gap-2 font-sans text-lg font-semibold tracking-tight text-slate-900">
-                  <IconMapPin className="h-5 w-5 shrink-0 text-[#0F766E]" aria-hidden />
-                  Location
-                </h3>
-                <div className="mt-3 overflow-hidden rounded-2xl ring-1 ring-stone-200/80 bg-stone-100">
-                  <iframe
+                <h3 className="font-display text-lg font-semibold text-stone-900">Where you&apos;ll celebrate</h3>
+                <div className="mt-4">
+                  <VenueMapEmbed
+                    lat={venue.lat}
+                    lng={venue.lng}
+                    mapQuery={mapQuery}
+                    placeLabel={primaryPlaceLabel || locationLabel}
                     title={isVenue ? "Venue location" : "Service area"}
-                    className="h-[220px] w-full sm:h-[260px]"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    src={`https://maps.google.com/maps?q=${mapQuery}&z=14&output=embed`}
                   />
                 </div>
-                <p className="mt-4 text-sm leading-relaxed text-slate-600">
-                  {primaryPlaceLabel || <span className="text-slate-400">Area not listed</span>}
+                <p className="mt-4 text-sm leading-relaxed text-stone-600">
+                  {primaryPlaceLabel || <span className="text-stone-400">Area not listed</span>}
                 </p>
               </div>
             </div>
@@ -626,7 +740,12 @@ export default function VenueDetailView({
             )}
           </SectionContainer>
 
-          <SectionContainer id="venue-section-photos" title="Photo gallery">
+          <SectionContainer
+            id="venue-section-photos"
+            title={
+              <span className="font-display text-2xl font-semibold tracking-tight text-stone-900">Gallery</span>
+            }
+          >
             <VenueGallery
               images={images}
               galleryResponsive={galleryResponsive}
@@ -634,12 +753,34 @@ export default function VenueDetailView({
             />
           </SectionContainer>
 
-          <SectionContainer id="venue-section-pricing" title="Pricing breakdown">
-            <PricingCard priceRange={priceDisplay} bullets={pricingBullets} />
+          <SectionContainer
+            id="venue-section-pricing"
+            title={
+              <span className="font-display text-2xl font-semibold tracking-tight text-stone-900">
+                Packages &amp; rates
+              </span>
+            }
+          >
+            <VenuePricingPremium
+              priceRange={priceDisplay}
+              bullets={pricingBullets}
+              capacity={venue.capacity}
+              facilities={venue.facilities}
+            />
           </SectionContainer>
 
-          <SectionContainer id="venue-section-reviews" title="Reviews">
-            <ReviewList reviews={reviewItems} />
+          <SectionContainer
+            id="venue-section-reviews"
+            title={
+              <span className="font-display text-2xl font-semibold tracking-tight text-stone-900">Guest stories</span>
+            }
+          >
+            <ReviewList
+              reviews={reviewItems}
+              venueName={venue.businessName}
+              onInquire={inquire}
+              demo={demo}
+            />
           </SectionContainer>
         </div>
       </div>
@@ -697,6 +838,17 @@ export default function VenueDetailView({
         >
           <img src={lightbox} alt="" className="max-h-[90vh] max-w-full rounded-lg object-contain" />
         </button>
+      ) : null}
+
+      {isVenue ? (
+        <VenueDetailStickyBar
+          priceRange={priceDisplay}
+          demo={demo}
+          sending={inquireSending}
+          notice={inquireNotice}
+          onInquire={inquire}
+          onCheckAvailability={scrollToPricing}
+        />
       ) : null}
     </div>
   );

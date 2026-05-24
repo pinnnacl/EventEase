@@ -16,7 +16,7 @@ export default function SectionContainer({ id, title, eyebrow, children, classNa
           {title}
         </h2>
       ) : null}
-      <div className={title != null || eyebrow ? "mt-4" : undefined}>{children}</div>
+      <div className={title != null || eyebrow ? "mt-6 sm:mt-8" : undefined}>{children}</div>
     </section>
   );
 }
