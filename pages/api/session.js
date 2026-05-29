@@ -1,3 +1,4 @@
+import { sendJsonWithEtag } from "../../lib/apiCacheHeaders";
 import {
   readCookieValue,
   readCustomerSessionFromCookie,
@@ -24,10 +25,14 @@ export default function handler(req, res) {
 
   const loggedIn = legacyLogin || Boolean(customer);
 
-  return res.status(200).json({
+  const body = JSON.stringify({
     ok: true,
     loggedIn,
     legacyLogin,
     customer,
+  });
+
+  sendJsonWithEtag(req, res, body, {
+    cacheControl: "private, max-age=60, stale-while-revalidate=120",
   });
 }

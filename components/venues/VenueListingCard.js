@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Users } from "lucide-react";
 import WishlistToggle from "../WishlistToggle";
-import useVenueCardPrefetch from "../../hooks/useVenueCardPrefetch";
 import { normalizeVenueTitle } from "../../lib/normalizeVenueTitle";
 import { getVenueDistanceDisplay } from "../../lib/venueDistanceLine";
 import { buildVenueListingCarouselSlides } from "../../lib/venueListingCarouselSlides";
@@ -12,6 +11,9 @@ import VenueListingPrice from "./VenueListingPrice";
 import VenueListingImageCarousel from "./VenueListingImageCarousel";
 
 export { VENUE_LISTING_FALLBACK_IMAGE } from "../../lib/venueListingCarouselSlides";
+
+/** FILE 3: module-level dedupe — one router.prefetch per venue id per page load */
+const prefetchedIds = new Set();
 
 /** Floating card: framed 4:3 image carousel, copy on page background below. */
 const IMAGE_ASPECT = "aspect-[4/3]";
@@ -65,8 +67,14 @@ export default function VenueListingCard({
   geoUsedFallback = false,
 }) {
   const router = useRouter();
-  const { rootRef, onIntent } = useVenueCardPrefetch(href, vendor.id);
   const [tapPending, setTapPending] = useState(false);
+
+  /** FILE 3: mouse-only route prefetch (no API warm); touch/mobile unchanged */
+  const handlePrefetch = useCallback(() => {
+    if (!vendor.id || prefetchedIds.has(vendor.id)) return;
+    prefetchedIds.add(vendor.id);
+    router.prefetch(`/venue/${vendor.id}`);
+  }, [router, vendor.id]);
 
   const title = normalizeVenueTitle(vendor.businessName);
   const loc = vendor.place?.trim() || vendor.city?.trim() || "—";
@@ -131,7 +139,6 @@ export default function VenueListingCard({
         <VenueListingImageCarousel
           slides={carouselSlides}
           onNavigate={navigateToVenue}
-          onIntent={onIntent}
           imageSizes={imageSizes}
           alt={title}
           unavailableOnSelectedDate={unavailableOnSelectedDate}
@@ -190,11 +197,8 @@ export default function VenueListingCard({
         href={href}
         prefetch
         scroll={false}
-        onMouseEnter={onIntent}
-        onTouchStart={onIntent}
         onClick={() => {
           setTapPending(true);
-          onIntent();
         }}
         className={`block ${CONTENT_GAP} focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-400/40 focus-visible:ring-offset-2`}
       >
@@ -205,12 +209,10 @@ export default function VenueListingCard({
 
   return (
     <article
-      ref={rootRef}
       className={`${LISTING_SHELL} transition-[opacity,transform] duration-150 ease-out ${
         tapPending ? "scale-[0.99] opacity-80" : ""
       }`}
-      onMouseEnter={onIntent}
-      onTouchStart={onIntent}
+      onMouseEnter={handlePrefetch}
     >
       <VenueCardMedia />
       <VenueCardBody TitleTag={variant === "featured" ? "h3" : "h2"} />

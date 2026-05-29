@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
+import { fetchJsonCached } from "../../lib/clientFetchCache";
 import ResponsiveVendorImage from "../images/ResponsiveVendorImage";
 
 const VenueHeroSwiperClient = dynamic(() => import("./VenueHeroSwiperClient"), {
@@ -43,6 +44,8 @@ export default function VenueGallery({ images, galleryResponsive, onImageClick }
             alt=""
             className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
+            loading="lazy"
+            fetchPriority="low"
           />
         </button>
       ))}
@@ -79,8 +82,8 @@ export function useVenueHeroGallery(venueId, heroSrc, heroResponsive) {
     let cancelled = false;
 
     const loadMore = () => {
-      fetch(`/api/venues/${encodeURIComponent(venueId)}/images`)
-        .then((r) => (r.ok ? r.json() : null))
+      const imagesUrl = `/api/venues/${encodeURIComponent(venueId)}/images`;
+      fetchJsonCached(imagesUrl, { ttlMs: 300_000 })
         .then((data) => {
           if (cancelled || !data?.ok || !Array.isArray(data.images) || data.images.length === 0) return;
           const extra = data.images

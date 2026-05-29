@@ -9,6 +9,7 @@ import HeaderHeart from "../HeaderHeart";
 import AiSearchExperience from "./AiSearchExperience";
 import MobileBottomNav from "./MobileBottomNav";
 import MobileHeaderAiSearch from "./MobileHeaderAiSearch";
+import { prefetchRouteOnce, prefetchRoutesParallel } from "../../lib/routePrefetch";
 import { CATEGORY_NAV_ITEMS, MOBILE_HEADER_NAV_ITEMS, isCategoryActive } from "./categoryNavConfig";
 
 export default function AppLayout({ children }) {
@@ -77,21 +78,6 @@ export default function AppLayout({ children }) {
     };
   }, [router.events]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-
-    const warmRoutes = ["/", "/venues", "/photography", "/makeup"];
-    const prefetchRoutes = () => {
-      warmRoutes.forEach((href) => {
-        void router.prefetch(href);
-      });
-    };
-
-    prefetchRoutes();
-    const timer = window.setTimeout(prefetchRoutes, 1200);
-    return () => window.clearTimeout(timer);
-  }, [router]);
-
   const pathname = router.pathname;
   const isHome = pathname === "/";
   const isVendorRoute = pathname.startsWith("/vendor");
@@ -100,10 +86,25 @@ export default function AppLayout({ children }) {
   const isVenueDetailRoute = pathname.startsWith("/venue");
   const isPhotographyDetailRoute = pathname === "/photography/demo" || pathname === "/photography/[id]";
 
+  useEffect(() => {
+    if (typeof window === "undefined" || isVenueDetailRoute || isPhotographyDetailRoute) return undefined;
+
+    const warmRoutes = ["/venues", "/photography", "/makeup"];
+    const run = () => prefetchRoutesParallel(router, warmRoutes);
+
+    if (typeof requestIdleCallback === "function") {
+      const idleId = requestIdleCallback(run, { timeout: 4000 });
+      return () => cancelIdleCallback(idleId);
+    }
+
+    const timer = window.setTimeout(run, 2000);
+    return () => window.clearTimeout(timer);
+  }, [router, isVenueDetailRoute, isPhotographyDetailRoute]);
+
   async function handleLogout() {
     await fetch("/api/logout", { method: "POST", credentials: "same-origin" });
     setAccountMenuOpen(false);
-    await refreshSession();
+    await refreshSession({ force: true });
     await router.push("/");
   }
 
@@ -120,13 +121,14 @@ export default function AppLayout({ children }) {
       {CATEGORY_NAV_ITEMS.map(({ key, label, href, iconSrc }) => {
         const active = pendingActiveHref === href || isCategoryActive(pathname, href);
         const warmRoute = () => {
-          void router.prefetch(href);
+          prefetchRouteOnce(router, href);
         };
+        const allowPrefetch = !isVenueDetailRoute && !isPhotographyDetailRoute;
         return (
           <li key={key} className="shrink-0">
             <Link
               href={href}
-              prefetch
+              prefetch={allowPrefetch}
               onMouseEnter={warmRoute}
               onFocus={warmRoute}
               onTouchStart={warmRoute}
@@ -173,13 +175,14 @@ export default function AppLayout({ children }) {
       {MOBILE_HEADER_NAV_ITEMS.map(({ key, label, href, iconSrc }) => {
         const active = pendingActiveHref === href || isCategoryActive(pathname, href);
         const warmRoute = () => {
-          void router.prefetch(href);
+          prefetchRouteOnce(router, href);
         };
+        const allowPrefetch = !isVenueDetailRoute && !isPhotographyDetailRoute;
         return (
           <li key={key} className="shrink-0">
             <Link
               href={href}
-              prefetch
+              prefetch={allowPrefetch}
               onMouseEnter={warmRoute}
               onFocus={warmRoute}
               onTouchStart={warmRoute}

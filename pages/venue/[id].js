@@ -1,15 +1,23 @@
+import dynamic from "next/dynamic";
 import Head from "next/head";
-import VenueDetailView from "../../components/venue/VenueDetailView";
-import { requireAdmin } from "../../lib/supabaseAuth";
+import { useRouter } from "next/router";
+import VenueSkeleton from "../../components/VenueSkeleton";
 import { isValidYmd } from "../../lib/eventDateYmd";
-import { getVendorIdsUnavailableOnDate } from "../../lib/vendorBookings";
-import {
-  getPublicVenueById,
-  getSimilarVenues,
-  getVenueDetailByIdAnyStatus,
-} from "../../lib/vendors";
+import { getApprovedVenueIdsForStaticPaths, getPublicVenueById, getSimilarVenues } from "../../lib/vendors";
+
+// FILE 2 STEP D: code-split heavy venue UI (map, gallery, swiper live inside VenueDetailView)
+const VenueDetailView = dynamic(() => import("../../components/venue/VenueDetailView"), {
+  loading: () => <VenueSkeleton />,
+});
 
 export default function VenueDetailPage({ venue, similar, availability, showPendingPreviewBanner }) {
+  const router = useRouter();
+
+  // FILE 2 STEP C: ISR fallback — show skeleton while blocking path is generated
+  if (router.isFallback) {
+    return <VenueSkeleton />;
+  }
+
   if (!venue) {
     return null;
   }
@@ -42,54 +50,48 @@ export default function VenueDetailPage({ venue, similar, availability, showPend
   );
 }
 
-export async function getServerSideProps({ params, query, req, res }) {
+// FILE 2 STEP A: getStaticPaths — prebuild top 50 approved venues; rest via fallback: 'blocking'
+export async function getStaticPaths() {
+  const { data: ids, error } = await getApprovedVenueIdsForStaticPaths(50);
+  if (error) {
+    return { paths: [], fallback: "blocking" };
+  }
+  return {
+    paths: ids.map((id) => ({ params: { id: String(id) } })),
+    fallback: "blocking",
+  };
+}
+
+// FILE 2 STEP A+B: ISR (revalidate 60s). Single vendors row fetch via getPublicVenueById (gallery_images, facilities on row).
+// AUTH NOTE: requireAdmin(req,res) for ?adminPreview= removed from build-time fetch — admin preview of
+// non-approved listings is not available at static generation time; approved venues preview normally.
+// ?date= availability is resolved client-side in VenueDetailView (see /api/public/venues-availability).
+export async function getStaticProps({ params }) {
   const id = params?.id;
   if (!id || typeof id !== "string") {
     return { notFound: true };
   }
 
-  const wantsAdminPreview = query.adminPreview === "1" || query.adminPreview === "true";
-
-  let venue = null;
   const pub = await getPublicVenueById(id);
   if (pub.error) {
     return { notFound: true };
   }
-  if (pub.data) {
-    venue = pub.data;
-  } else if (wantsAdminPreview) {
-    const gate = await requireAdmin(req, res);
-    if (!gate.ok) {
-      return { notFound: true };
-    }
-    const preview = await getVenueDetailByIdAnyStatus(id);
-    if (preview.error || !preview.data) {
-      return { notFound: true };
-    }
-    venue = preview.data;
-  } else {
+  if (!pub.data) {
     return { notFound: true };
   }
 
+  const venue = pub.data;
+
   if (venue.category === "Photographer") {
-    const q = new URLSearchParams();
-    if (typeof query.date === "string" && query.date.trim()) {
-      q.set("date", query.date.trim().slice(0, 10));
-    }
-    if (wantsAdminPreview) {
-      q.set("adminPreview", "1");
-    }
-    const dest = `/photography/${id}${q.toString() ? `?${q.toString()}` : ""}`;
-    return { redirect: { destination: dest, permanent: false } };
+    return {
+      redirect: { destination: `/photography/${id}`, permanent: false },
+    };
   }
 
   if (venue.category === "Makeup") {
-    const q = new URLSearchParams();
-    if (wantsAdminPreview) {
-      q.set("adminPreview", "1");
-    }
-    const dest = `/makeup/${id}${q.toString() ? `?${q.toString()}` : ""}`;
-    return { redirect: { destination: dest, permanent: false } };
+    return {
+      redirect: { destination: `/makeup/${id}`, permanent: false },
+    };
   }
 
   let sim = [];
@@ -98,33 +100,17 @@ export async function getServerSideProps({ params, query, req, res }) {
     sim = similar || [];
   }
 
-  const dateParam = typeof query.date === "string" ? query.date.trim().slice(0, 10) : null;
-  const availabilityDate = dateParam && isValidYmd(dateParam) ? dateParam : null;
-
-  let unavailableSelf = false;
-  /** @type {string[]} */
-  let similarUnavailableIds = [];
-  if (availabilityDate) {
-    const allIds = [venue.id, ...sim.map((s) => s.id)];
-    const { ids, error: bookErr } = await getVendorIdsUnavailableOnDate(availabilityDate, allIds);
-    if (!bookErr) {
-      unavailableSelf = ids.has(venue.id);
-      similarUnavailableIds = sim.filter((s) => ids.has(s.id)).map((s) => s.id);
-    }
-  }
-
-  const showPendingPreviewBanner = wantsAdminPreview && venue.status !== "approved";
-
   return {
     props: {
       venue: JSON.parse(JSON.stringify(venue)),
       similar: JSON.parse(JSON.stringify(sim)),
       availability: {
-        date: availabilityDate,
-        unavailableSelf,
-        similarUnavailableIds,
+        date: null,
+        unavailableSelf: false,
+        similarUnavailableIds: [],
       },
-      showPendingPreviewBanner,
+      showPendingPreviewBanner: false,
     },
+    revalidate: 60,
   };
 }

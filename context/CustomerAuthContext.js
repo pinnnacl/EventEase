@@ -2,6 +2,10 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import PhoneLoginSignupModal from "../components/auth/PhoneLoginSignupModal";
+import { fetchJsonCached, invalidateCachedJson } from "../lib/clientFetchCache";
+
+const SESSION_URL = "/api/session";
+const SESSION_CLIENT_TTL_MS = 60_000;
 
 /** @typedef {{ name: string; location?: string; phone_hint: string; sessionExpiresAtSec?: number } | null} CustomerUser */
 
@@ -38,14 +42,34 @@ export function CustomerAuthProvider({ children }) {
   const [customer, setCustomer] = useState(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const afterAuthRef = useRef(/** @type {null | ((pass: string) => void | Promise<void>)} */ (null));
+  const lastSessionFetchAt = useRef(0);
 
-  const refreshSession = useCallback(async () => {
+  const applySessionPayload = useCallback((data) => {
+    if (!data || typeof data !== "object") {
+      setLoggedIn(false);
+      setLegacyLogin(false);
+      setCustomer(null);
+      return;
+    }
+    setLoggedIn(Boolean(data.loggedIn));
+    setLegacyLogin(Boolean(data.legacyLogin));
+    setCustomer(data.customer && typeof data.customer === "object" ? data.customer : null);
+  }, []);
+
+  const refreshSession = useCallback(async (options = {}) => {
+    const force = options?.force === true;
+    const now = Date.now();
+    if (!force && lastSessionFetchAt.current && now - lastSessionFetchAt.current < SESSION_CLIENT_TTL_MS) {
+      return;
+    }
+
     try {
-      const res = await fetch("/api/session", { credentials: "same-origin" });
-      const data = await res.json().catch(() => ({}));
-      setLoggedIn(Boolean(data.loggedIn));
-      setLegacyLogin(Boolean(data.legacyLogin));
-      setCustomer(data.customer && typeof data.customer === "object" ? data.customer : null);
+      const data = await fetchJsonCached(SESSION_URL, {
+        ttlMs: SESSION_CLIENT_TTL_MS,
+        force,
+      });
+      lastSessionFetchAt.current = Date.now();
+      applySessionPayload(data);
 
       if (data.customer && typeof window !== "undefined") {
         try {
@@ -67,16 +91,29 @@ export function CustomerAuthProvider({ children }) {
         }
       }
     } catch {
-      setLoggedIn(false);
-      setLegacyLogin(false);
-      setCustomer(null);
+      applySessionPayload(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applySessionPayload]);
 
   useEffect(() => {
-    void refreshSession();
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) void refreshSession();
+    };
+    if (typeof requestIdleCallback === "function") {
+      const idleId = requestIdleCallback(run, { timeout: 2500 });
+      return () => {
+        cancelled = true;
+        cancelIdleCallback(idleId);
+      };
+    }
+    const timerId = setTimeout(run, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timerId);
+    };
   }, [refreshSession]);
 
   const openLoginModal = useCallback(() => {
@@ -86,8 +123,7 @@ export function CustomerAuthProvider({ children }) {
 
   const ensureCallbackAuth = useCallback(
     async (after) => {
-      const res = await fetch("/api/session", { credentials: "same-origin" });
-      const data = await res.json().catch(() => ({}));
+      const data = await fetchJsonCached(SESSION_URL, { ttlMs: SESSION_CLIENT_TTL_MS, force: true });
       if (data.customer) {
         const p = await fetch("/api/auth/mint-callback-pass", {
           method: "POST",
@@ -118,8 +154,7 @@ export function CustomerAuthProvider({ children }) {
 
   /** Opens the phone OTP modal when there is no `customer` session; runs `after` after successful verify. */
   const ensureAuthenticated = useCallback(async (after) => {
-    const res = await fetch("/api/session", { credentials: "same-origin" });
-    const data = await res.json().catch(() => ({}));
+    const data = await fetchJsonCached(SESSION_URL, { ttlMs: SESSION_CLIENT_TTL_MS, force: true });
     if (data.customer) {
       await after();
       return;
@@ -135,7 +170,8 @@ export function CustomerAuthProvider({ children }) {
       const pass = typeof payload.callbackPass === "string" ? payload.callbackPass : "";
       const fn = afterAuthRef.current;
       afterAuthRef.current = null;
-      await refreshSession();
+      invalidateCachedJson(SESSION_URL);
+      await refreshSession({ force: true });
       if (fn) {
         await fn(pass);
       }

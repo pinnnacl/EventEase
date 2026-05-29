@@ -708,6 +708,8 @@ export default function VenueDetailView({
                         alt=""
                         className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                         sizes="(max-width: 1024px) 50vw, 240px"
+                        loading="lazy"
+                        fetchPriority="low"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-slate-400">No image</div>
