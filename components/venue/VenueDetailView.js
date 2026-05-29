@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LayoutGrid } from "lucide-react";
 import ResponsiveVendorImage from "../images/ResponsiveVendorImage";
 import VenueDistanceText from "../venues/VenueDistanceText";
@@ -17,7 +17,7 @@ import ReviewList from "./ReviewList";
 import SectionContainer from "./SectionContainer";
 import SectionTabs from "./SectionTabs";
 import VenueDetailStickyBar from "./VenueDetailStickyBar";
-import VenueGallery from "./VenueGallery";
+import VenueGallery, { useIsLgViewport, useVenueHeroGallery, VenueHeroGallery } from "./VenueGallery";
 import VenueDetailsRows from "./VenueDetailsRows";
 import VenueHighlightsGrid from "./VenueHighlightsGrid";
 import VenueMapEmbed from "./VenueMapEmbed";
@@ -117,14 +117,18 @@ export default function VenueDetailView({
     () => (Array.isArray(venue.galleryImagesResponsive) ? venue.galleryImagesResponsive : []),
     [venue.galleryImagesResponsive],
   );
-  const [carousel, setCarousel] = useState(0);
   const [activeTag, setActiveTag] = useState(0);
   const [activeSectionId, setActiveSectionId] = useState("venue-section-about");
-  const heroResponsive = useMemo(() => {
-    if (galleryResponsive[carousel]) return galleryResponsive[carousel];
-    if (carousel === 0 && venue.profileImageResponsive) return venue.profileImageResponsive;
-    return null;
-  }, [galleryResponsive, carousel, venue.profileImageResponsive]);
+  const heroResponsive = useMemo(
+    () => galleryResponsive[0] || venue.profileImageResponsive || null,
+    [galleryResponsive, venue.profileImageResponsive],
+  );
+  const isLgViewport = useIsLgViewport();
+  const { slides: heroSlides, swiperEnabled: heroSwiperEnabled } = useVenueHeroGallery(
+    venue.id,
+    images[0],
+    heroResponsive,
+  );
   const [lightbox, setLightbox] = useState(null);
 
   const geo = useUserGeolocation();
@@ -243,14 +247,6 @@ export default function VenueDetailView({
     },
     [demo, effectiveYmd, venue.category],
   );
-
-  const next = useCallback(() => {
-    setCarousel((i) => (images.length ? (i + 1) % images.length : 0));
-  }, [images.length]);
-
-  const prev = useCallback(() => {
-    setCarousel((i) => (images.length ? (i - 1 + images.length) % images.length : 0));
-  }, [images.length]);
 
   const isVenue = venue.category === "Venue";
 
@@ -397,96 +393,8 @@ export default function VenueDetailView({
 
   const scrollToPricing = useCallback(() => scrollToSection("venue-section-pricing"), [scrollToSection]);
   const scrollToPhotos = useCallback(() => scrollToSection("venue-section-photos"), [scrollToSection]);
-  const heroTouchRef = useRef({ startX: 0 });
 
-  const onHeroTouchStart = useCallback((e) => {
-    heroTouchRef.current.startX = e.changedTouches[0]?.clientX ?? 0;
-  }, []);
-
-  const onHeroTouchEnd = useCallback(
-    (e) => {
-      if (images.length <= 1) return;
-      const endX = e.changedTouches[0]?.clientX ?? 0;
-      const dx = endX - heroTouchRef.current.startX;
-      if (Math.abs(dx) < 48) return;
-      if (dx < 0) next();
-      else prev();
-    },
-    [images.length, next, prev],
-  );
-
-  function HeroImage({ className = "" }) {
-    return images[0] ? (
-      <ResponsiveVendorImage
-        responsive={heroResponsive}
-        src={images[carousel] || images[0]}
-        alt=""
-        className={className}
-        sizes="100vw"
-        loading={carousel === 0 ? "eager" : "lazy"}
-        fetchPriority={carousel === 0 ? "high" : "low"}
-      />
-    ) : (
-      <div className={`flex items-center justify-center bg-stone-200 text-sm text-stone-500 ${className}`}>
-        No image
-      </div>
-    );
-  }
-
-  /** Mobile: swipe only + counter + thin progress bar (no arrow clutter). */
-  function MobileHeroCarouselChrome() {
-    if (images.length <= 1) return null;
-    const progress = ((carousel + 1) / images.length) * 100;
-    return (
-      <>
-        <span className="absolute left-4 top-4 z-10 rounded-full bg-black/40 px-2.5 py-1 text-[0.6875rem] font-medium tabular-nums text-white/95 backdrop-blur-[2px]">
-          {carousel + 1} / {images.length}
-        </span>
-        <div className="absolute inset-x-0 bottom-0 z-10 h-[2px] bg-white/25" aria-hidden>
-          <div
-            className="h-full bg-white/90 transition-[width] duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </>
-    );
-  }
-
-  /** Desktop: arrows + dot indicators. */
-  function DesktopHeroCarouselControls() {
-    if (images.length <= 1) return null;
-    return (
-      <>
-        <button
-          type="button"
-          onClick={prev}
-          className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md transition hover:bg-white"
-          aria-label="Previous image"
-        >
-          ‹
-        </button>
-        <button
-          type="button"
-          onClick={next}
-          className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md transition hover:bg-white sm:right-5"
-          aria-label="Next image"
-        >
-          ›
-        </button>
-        <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-1.5 sm:bottom-10">
-          {images.slice(0, 5).map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              aria-label={`Go to slide ${i + 1}`}
-              onClick={() => setCarousel(i)}
-              className={`h-2 rounded-full transition ${carousel === i ? "w-6 bg-white" : "w-2 bg-white/50"}`}
-            />
-          ))}
-        </div>
-      </>
-    );
-  }
+  const heroImageClassName = "h-full w-full object-cover object-center transition duration-500 ease-out";
 
   return (
     <div className="w-full bg-white text-slate-800">
@@ -502,25 +410,14 @@ export default function VenueDetailView({
       {/* Mobile: full-bleed immersive hero */}
       <section className="relative bg-white lg:hidden">
         <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">
-          <div
-            className="relative aspect-[4/5] max-h-[min(78vh,520px)] w-full overflow-hidden bg-stone-200 touch-pan-y"
-            onTouchStart={onHeroTouchStart}
-            onTouchEnd={onHeroTouchEnd}
-          >
-            <HeroImage className="h-full w-full object-cover object-center transition duration-500 ease-out" />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/40 to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
-            <MobileHeroCarouselChrome />
-            {images.length > 0 ? (
-              <button
-                type="button"
-                onClick={scrollToPhotos}
-                className="absolute bottom-5 right-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-4 py-2 text-[0.8125rem] font-medium text-stone-900 shadow-md ring-1 ring-black/[0.06] backdrop-blur-sm"
-              >
-                <LayoutGrid className="h-[0.875rem] w-[0.875rem]" strokeWidth={1.25} aria-hidden />
-                View all photos ({images.length})
-              </button>
-            ) : null}
+          <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-200 touch-pan-y">
+            <VenueHeroGallery
+              slides={heroSlides}
+              swiperEnabled={heroSwiperEnabled}
+              active={!isLgViewport}
+              imageClassName={heroImageClassName}
+            />
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-black/25 to-transparent" />
           </div>
         </div>
 
@@ -585,7 +482,12 @@ export default function VenueDetailView({
             <div className="relative">
               <div className="relative overflow-hidden rounded-2xl bg-slate-200 shadow-[0_12px_40px_-20px_rgba(15,23,42,0.25)] ring-1 ring-stone-200/60">
                 <div className="relative aspect-[2.2/1] w-full">
-                  <HeroImage className="h-full w-full object-cover object-center transition duration-500 ease-out" />
+                  <VenueHeroGallery
+                    slides={heroSlides}
+                    swiperEnabled={heroSwiperEnabled}
+                    active={isLgViewport}
+                    imageClassName={heroImageClassName}
+                  />
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/35 to-transparent" />
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/50 via-black/15 to-transparent" />
                   <div className="pointer-events-auto absolute right-5 top-5 z-10">
@@ -594,7 +496,6 @@ export default function VenueDetailView({
                       THAALI
                     </span>
                   </div>
-                  <DesktopHeroCarouselControls />
                   {images.length > 0 ? (
                     <button
                       type="button"
