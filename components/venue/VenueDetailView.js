@@ -10,6 +10,7 @@ import { buildVenueHighlights } from "../../lib/buildVenueHighlights";
 import { formatVenuePriceDisplay } from "../../lib/formatVenuePrice";
 import { isValidYmd } from "../../lib/eventDateYmd";
 import { parseVenueProximityPoints } from "../../lib/parseVenueProximity";
+import { snapVenueDetailToTop } from "../../lib/venueDetailScroll";
 import { readStoredEventDateYmd } from "../../lib/wishlistActions";
 import { getPublicVenueDetailRows } from "../../lib/venueDetails";
 import AmenityChips from "./AmenityChips";
@@ -133,6 +134,11 @@ export default function VenueDetailView({
 
   const geo = useUserGeolocation();
   const router = useRouter();
+
+  useEffect(() => {
+    snapVenueDetailToTop();
+  }, [venue.id]);
+
   const avDate = availabilityProp?.date ?? null;
   const avSimilarKey = Array.isArray(availabilityProp?.similarUnavailableIds)
     ? availabilityProp.similarUnavailableIds.join(",")
@@ -425,6 +431,7 @@ export default function VenueDetailView({
               active={!isLgViewport}
               imageClassName={heroImageClassName}
               onOpenGallery={openGallery}
+              venueId={venue.id}
             />
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-black/25 to-transparent" />
           </div>
@@ -497,6 +504,7 @@ export default function VenueDetailView({
                     active={isLgViewport}
                     imageClassName={heroImageClassName}
                     onOpenGallery={openGallery}
+                    venueId={venue.id}
                   />
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/35 to-transparent" />
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/50 via-black/15 to-transparent" />

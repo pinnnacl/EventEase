@@ -1,14 +1,9 @@
-import dynamic from "next/dynamic";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import VenueDetailView from "../../components/venue/VenueDetailView";
 import VenueSkeleton from "../../components/VenueSkeleton";
 import { isValidYmd } from "../../lib/eventDateYmd";
 import { getApprovedVenueIdsForStaticPaths, getPublicVenueById, getSimilarVenues } from "../../lib/vendors";
-
-// FILE 2 STEP D: code-split heavy venue UI (map, gallery, swiper live inside VenueDetailView)
-const VenueDetailView = dynamic(() => import("../../components/venue/VenueDetailView"), {
-  loading: () => <VenueSkeleton />,
-});
 
 export default function VenueDetailPage({ venue, similar, availability, showPendingPreviewBanner }) {
   const router = useRouter();

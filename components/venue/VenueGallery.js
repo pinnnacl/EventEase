@@ -1,5 +1,7 @@
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useVenueHeroTransition } from "../../context/VenueHeroTransitionContext";
 import { fetchJsonCached } from "../../lib/clientFetchCache";
 import ResponsiveVendorImage from "../images/ResponsiveVendorImage";
 
@@ -136,19 +138,44 @@ export function useVenueHeroGallery(venueId, heroSrc, heroResponsive) {
  *   active?: boolean;
  *   imageClassName?: string;
  *   onOpenGallery?: () => void;
+ *   venueId?: string;
  * }} props
  */
-export function VenueHeroGallery({ slides, swiperEnabled, active = true, imageClassName = "", onOpenGallery }) {
+export function VenueHeroGallery({
+  slides,
+  swiperEnabled,
+  active = true,
+  imageClassName = "",
+  onOpenGallery,
+  venueId = "",
+}) {
+  const router = useRouter();
+  const targetRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+  const { registerHeroTarget, isHeroHidden } = useVenueHeroTransition();
+  const hideHero = active && isHeroHidden(venueId);
+
+  useEffect(() => {
+    if (!active || !venueId) return undefined;
+
+    function measureHeroTarget() {
+      registerHeroTarget(targetRef.current, venueId);
+    }
+
+    measureHeroTarget();
+    router.events.on("routeChangeComplete", measureHeroTarget);
+    return () => router.events.off("routeChangeComplete", measureHeroTarget);
+  }, [active, venueId, registerHeroTarget, slides, swiperEnabled, router.events]);
+
+  let inner = null;
+
   if (!slides.length) {
-    return (
+    inner = (
       <div className={`flex items-center justify-center bg-stone-200 text-sm text-stone-500 ${imageClassName}`}>
         No image
       </div>
     );
-  }
-
-  if (!active || !swiperEnabled || slides.length <= 1) {
-    return (
+  } else if (!active || !swiperEnabled || slides.length <= 1) {
+    inner = (
       <button
         type="button"
         onClick={() => onOpenGallery?.()}
@@ -166,10 +193,16 @@ export function VenueHeroGallery({ slides, swiperEnabled, active = true, imageCl
         />
       </button>
     );
+  } else {
+    inner = (
+      <VenueHeroSwiperClient slides={slides} imageClassName={imageClassName} onOpenGallery={onOpenGallery} />
+    );
   }
 
   return (
-    <VenueHeroSwiperClient slides={slides} imageClassName={imageClassName} onOpenGallery={onOpenGallery} />
+    <div ref={targetRef} className={`h-full w-full ${hideHero ? "invisible" : ""}`}>
+      {inner}
+    </div>
   );
 }
 

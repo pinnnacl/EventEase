@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useVenueHeroTransition } from "../../context/VenueHeroTransitionContext";
 import ResponsiveVendorImage from "../images/ResponsiveVendorImage";
 
 const MAX_DOTS = 5;
@@ -43,6 +45,7 @@ function buildDotWindow(total, active) {
  *   imageSizes?: string;
  *   alt?: string;
  *   unavailableOnSelectedDate?: boolean;
+ *   href?: string;
  * }} props
  */
 export default function VenueListingImageCarousel({
@@ -52,7 +55,10 @@ export default function VenueListingImageCarousel({
   imageSizes = "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 360px",
   alt = "",
   unavailableOnSelectedDate = false,
+  href = "",
 }) {
+  const router = useRouter();
+  const { beginVenueHeroTransition } = useVenueHeroTransition();
   const scrollRef = useRef(/** @type {HTMLDivElement | null} */ (null));
   const slideRefs = useRef(/** @type {(HTMLDivElement | null)[]} */ ([]));
   const dragRef = useRef({ active: false, startX: 0, scrollLeft: 0 });
@@ -137,8 +143,14 @@ export default function VenueListingImageCarousel({
   );
 
   const navigateToVenue = useCallback(() => {
+    const slide = slideRefs.current[activeIndex];
+    const img = slide?.querySelector("img");
+    if (beginVenueHeroTransition && img && href) {
+      const started = beginVenueHeroTransition(router, href, img);
+      if (started) return;
+    }
     onNavigate();
-  }, [onNavigate]);
+  }, [activeIndex, beginVenueHeroTransition, href, onNavigate, router]);
 
   /** IntersectionObserver — backup + lazy-load neighbour slides while scrolling */
   useEffect(() => {

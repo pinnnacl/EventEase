@@ -2,6 +2,7 @@ import { Inter, Playfair_Display } from "next/font/google";
 import "../styles/globals.css";
 import { WishlistProvider } from "../context/WishlistContext";
 import { CustomerAuthProvider } from "../context/CustomerAuthContext";
+import { VenueHeroTransitionProvider } from "../context/VenueHeroTransitionContext";
 import SupabaseRecoveryRedirect from "../components/auth/SupabaseRecoveryRedirect";
 import AppLayout from "../components/layout/AppLayout";
 import RouteNavigationShell from "../components/layout/RouteNavigationShell";
@@ -28,15 +29,17 @@ export default function App({ Component, pageProps }) {
       <CustomerAuthProvider>
         <SupabaseRecoveryRedirect />
         <div className={`page-wrapper bg-background ${inter.variable} ${playfair.variable} font-sans`}>
-          <RouteNavigationShell>
-            {hideAppLayout ? (
-              inner
-            ) : (
-              <HomeAiSearchProvider>
-                <AppLayout>{inner}</AppLayout>
-              </HomeAiSearchProvider>
-            )}
-          </RouteNavigationShell>
+          <VenueHeroTransitionProvider>
+            <RouteNavigationShell>
+              {hideAppLayout ? (
+                inner
+              ) : (
+                <HomeAiSearchProvider>
+                  <AppLayout>{inner}</AppLayout>
+                </HomeAiSearchProvider>
+              )}
+            </RouteNavigationShell>
+          </VenueHeroTransitionProvider>
         </div>
       </CustomerAuthProvider>
     </WishlistProvider>

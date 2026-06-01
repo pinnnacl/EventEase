@@ -1,4 +1,6 @@
+import { motion } from "framer-motion";
 import { parseResponsiveImageField } from "../../lib/imageVariants";
+import { VENUE_HERO_LAYOUT_TRANSITION } from "../../lib/venueHeroLayoutId";
 
 /**
  * Vendor-uploaded images may have thumb / medium / large URLs (JSON in DB) or a single URL.
@@ -12,6 +14,8 @@ import { parseResponsiveImageField } from "../../lib/imageVariants";
  *   sizes?: string;
  *   loading?: "lazy" | "eager";
  *   fetchPriority?: "high" | "low" | "auto";
+ *   layoutId?: string | null;
+ *   layoutTransition?: import("framer-motion").Transition;
  * }} props
  */
 export default function ResponsiveVendorImage({
@@ -22,6 +26,8 @@ export default function ResponsiveVendorImage({
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
   loading = "lazy",
   fetchPriority,
+  layoutId = null,
+  layoutTransition = VENUE_HERO_LAYOUT_TRANSITION,
 }) {
   const r = responsive || parseResponsiveImageField(src);
   const fallback = (typeof src === "string" && src.trim()) || r?.large;
@@ -32,16 +38,26 @@ export default function ResponsiveVendorImage({
   /** Prefer large as default `src` when variants exist so fallback / first paint stays sharp; single-URL rows unchanged. */
   const defaultSrc = hasVariants ? r?.large || fallback : r?.medium || fallback;
 
-  return (
-    <img
-      src={defaultSrc}
-      srcSet={srcSet}
-      sizes={hasVariants ? sizes : undefined}
-      alt={alt}
-      className={className}
-      loading={loading}
-      decoding="async"
-      fetchPriority={fetchPriority}
-    />
-  );
+  const imageProps = {
+    src: defaultSrc,
+    srcSet,
+    sizes: hasVariants ? sizes : undefined,
+    alt,
+    className,
+    loading,
+    decoding: "async",
+    fetchPriority,
+  };
+
+  if (layoutId) {
+    return (
+      <motion.img
+        layoutId={layoutId}
+        transition={layoutTransition}
+        {...imageProps}
+      />
+    );
+  }
+
+  return <img {...imageProps} />;
 }

@@ -139,6 +139,7 @@ export default function VenueListingCard({
         <VenueListingImageCarousel
           slides={carouselSlides}
           onNavigate={navigateToVenue}
+          href={href}
           imageSizes={imageSizes}
           alt={title}
           unavailableOnSelectedDate={unavailableOnSelectedDate}
