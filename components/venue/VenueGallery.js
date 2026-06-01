@@ -135,9 +135,10 @@ export function useVenueHeroGallery(venueId, heroSrc, heroResponsive) {
  *   swiperEnabled: boolean;
  *   active?: boolean;
  *   imageClassName?: string;
+ *   onOpenGallery?: () => void;
  * }} props
  */
-export function VenueHeroGallery({ slides, swiperEnabled, active = true, imageClassName = "" }) {
+export function VenueHeroGallery({ slides, swiperEnabled, active = true, imageClassName = "", onOpenGallery }) {
   if (!slides.length) {
     return (
       <div className={`flex items-center justify-center bg-stone-200 text-sm text-stone-500 ${imageClassName}`}>
@@ -148,19 +149,28 @@ export function VenueHeroGallery({ slides, swiperEnabled, active = true, imageCl
 
   if (!active || !swiperEnabled || slides.length <= 1) {
     return (
-      <ResponsiveVendorImage
-        responsive={slides[0].responsive}
-        src={slides[0].url}
-        alt=""
-        className={imageClassName}
-        sizes="100vw"
-        loading="eager"
-        fetchPriority="high"
-      />
+      <button
+        type="button"
+        onClick={() => onOpenGallery?.()}
+        className="block h-full w-full cursor-pointer border-0 bg-transparent p-0 text-left"
+        aria-label="View venue photos"
+      >
+        <ResponsiveVendorImage
+          responsive={slides[0].responsive}
+          src={slides[0].url}
+          alt=""
+          className={imageClassName}
+          sizes="100vw"
+          loading="eager"
+          fetchPriority="high"
+        />
+      </button>
     );
   }
 
-  return <VenueHeroSwiperClient slides={slides} imageClassName={imageClassName} />;
+  return (
+    <VenueHeroSwiperClient slides={slides} imageClassName={imageClassName} onOpenGallery={onOpenGallery} />
+  );
 }
 
 export { useIsLgViewport };

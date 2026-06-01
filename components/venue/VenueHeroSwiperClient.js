@@ -11,9 +11,10 @@ import "swiper/css/pagination";
  * @param {{
  *   slides: { url: string; responsive?: { thumb: string; medium: string; large: string } | null }[];
  *   imageClassName?: string;
+ *   onOpenGallery?: () => void;
  * }} props
  */
-export default function VenueHeroSwiperClient({ slides, imageClassName = "" }) {
+export default function VenueHeroSwiperClient({ slides, imageClassName = "", onOpenGallery }) {
   if (!slides?.length) return null;
 
   const showPagination = slides.length > 1;
@@ -24,7 +25,8 @@ export default function VenueHeroSwiperClient({ slides, imageClassName = "" }) {
       slidesPerView={1}
       spaceBetween={0}
       speed={320}
-      className="venue-hero-swiper h-full w-full"
+      className="venue-hero-swiper h-full w-full cursor-pointer"
+      onClick={() => onOpenGallery?.()}
       pagination={
         showPagination
           ? {

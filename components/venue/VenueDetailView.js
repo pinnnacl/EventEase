@@ -394,6 +394,14 @@ export default function VenueDetailView({
   const scrollToPricing = useCallback(() => scrollToSection("venue-section-pricing"), [scrollToSection]);
   const scrollToPhotos = useCallback(() => scrollToSection("venue-section-photos"), [scrollToSection]);
 
+  const openGallery = useCallback(() => {
+    if (demo || !images.length) return;
+    const q = new URLSearchParams();
+    if (effectiveYmd) q.set("date", effectiveYmd);
+    const suffix = q.toString() ? `?${q.toString()}` : "";
+    void router.push(`/venue/${venue.id}/photos${suffix}`);
+  }, [demo, images.length, effectiveYmd, router, venue.id]);
+
   const heroImageClassName = "h-full w-full object-cover object-center transition duration-500 ease-out";
 
   return (
@@ -416,6 +424,7 @@ export default function VenueDetailView({
               swiperEnabled={heroSwiperEnabled}
               active={!isLgViewport}
               imageClassName={heroImageClassName}
+              onOpenGallery={openGallery}
             />
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-black/25 to-transparent" />
           </div>
@@ -487,6 +496,7 @@ export default function VenueDetailView({
                     swiperEnabled={heroSwiperEnabled}
                     active={isLgViewport}
                     imageClassName={heroImageClassName}
+                    onOpenGallery={openGallery}
                   />
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/35 to-transparent" />
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/50 via-black/15 to-transparent" />
