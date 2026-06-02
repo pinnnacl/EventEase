@@ -391,23 +391,6 @@ export default function VenueListingImageCarousel({
         ))}
       </div>
 
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-[28%] bg-gradient-to-b from-black/25 to-transparent"
-        aria-hidden
-      />
-
-      {multi ? (
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-[15%] bg-gradient-to-t from-black/55 via-black/20 to-transparent"
-          aria-hidden
-        />
-      ) : (
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-[20%] bg-gradient-to-t from-black/30 to-transparent"
-          aria-hidden
-        />
-      )}
-
       {unavailableOnSelectedDate ? (
         <span className="pointer-events-none absolute bottom-3 left-3 z-[3] rounded-lg bg-amber-950/90 px-2.5 py-1 text-[0.625rem] font-medium uppercase tracking-wide text-white shadow-sm">
           Booked on your date
