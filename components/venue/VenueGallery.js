@@ -1,7 +1,5 @@
 import dynamic from "next/dynamic";
-import { useRouter } from "next/router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useVenueHeroTransition } from "../../context/VenueHeroTransitionContext";
+import { useEffect, useMemo, useState } from "react";
 import { fetchJsonCached } from "../../lib/clientFetchCache";
 import ResponsiveVendorImage from "../images/ResponsiveVendorImage";
 
@@ -138,7 +136,6 @@ export function useVenueHeroGallery(venueId, heroSrc, heroResponsive) {
  *   active?: boolean;
  *   imageClassName?: string;
  *   onOpenGallery?: () => void;
- *   venueId?: string;
  * }} props
  */
 export function VenueHeroGallery({
@@ -147,25 +144,7 @@ export function VenueHeroGallery({
   active = true,
   imageClassName = "",
   onOpenGallery,
-  venueId = "",
 }) {
-  const router = useRouter();
-  const targetRef = useRef(/** @type {HTMLDivElement | null} */ (null));
-  const { registerHeroTarget, isHeroHidden } = useVenueHeroTransition();
-  const hideHero = active && isHeroHidden(venueId);
-
-  useEffect(() => {
-    if (!active || !venueId) return undefined;
-
-    function measureHeroTarget() {
-      registerHeroTarget(targetRef.current, venueId);
-    }
-
-    measureHeroTarget();
-    router.events.on("routeChangeComplete", measureHeroTarget);
-    return () => router.events.off("routeChangeComplete", measureHeroTarget);
-  }, [active, venueId, registerHeroTarget, slides, swiperEnabled, router.events]);
-
   let inner = null;
 
   if (!slides.length) {
@@ -199,11 +178,7 @@ export function VenueHeroGallery({
     );
   }
 
-  return (
-    <div ref={targetRef} className={`h-full w-full ${hideHero ? "invisible" : ""}`}>
-      {inner}
-    </div>
-  );
+  return <div className="h-full w-full">{inner}</div>;
 }
 
 export { useIsLgViewport };
