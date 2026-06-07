@@ -22,6 +22,7 @@ import VenueGallery, { useIsLgViewport, useVenueHeroGallery, VenueHeroGallery } 
 import VenueDetailsRows from "./VenueDetailsRows";
 import VenueHighlightsGrid from "./VenueHighlightsGrid";
 import VenueMapEmbed from "./VenueMapEmbed";
+import VenueMobileFloatingSummaryCard from "./VenueMobileFloatingSummaryCard";
 import VenuePricingPremium from "./VenuePricingPremium";
 import VenueProximityList from "./VenueProximityList";
 
@@ -411,7 +412,7 @@ export default function VenueDetailView({
   const heroImageClassName = "h-full w-full object-cover object-center transition duration-500 ease-out";
 
   return (
-    <div className="w-full bg-white text-slate-800">
+    <div className="w-full overflow-x-hidden bg-white text-slate-800">
       {showPendingPreviewBanner ? (
         <div
           className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-sm font-medium text-amber-950"
@@ -421,9 +422,9 @@ export default function VenueDetailView({
           see after approval.
         </div>
       ) : null}
-      {/* Mobile: full-bleed immersive hero */}
-      <section className="relative bg-white lg:hidden">
-        <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">
+      {/* Mobile: hero + floating summary card (≤768px) */}
+      <section className="relative overflow-x-hidden bg-white lg:hidden">
+        <div className="relative">
           <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-200 touch-pan-y">
             <VenueHeroGallery
               slides={heroSlides}
@@ -433,46 +434,62 @@ export default function VenueDetailView({
               onOpenGallery={openGallery}
             />
           </div>
-        </div>
 
-        <div className="mx-auto max-w-6xl px-5 pb-8 pt-7">
-          <p className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#0F766E]">{heroEyebrow}</p>
-
-          <div className="mt-2">
-            <h1 className="font-display text-[1.65rem] font-medium leading-[1.2] tracking-tight text-stone-900">
-              {venue.businessName}
-            </h1>
-            <p className="mt-1 text-[0.8125rem] font-normal leading-snug text-[#666666]">
-              {primaryPlaceLabel || locationLabel || "Kerala"}
-            </p>
-            <VenueDistanceText
-              venueLat={venue.lat}
-              venueLng={venue.lng}
+          {isVenue ? (
+            <VenueMobileFloatingSummaryCard
+              venue={venue}
+              reviews={reviewItems}
               viewerLat={geo.viewerLat}
               viewerLng={geo.viewerLng}
               viewerAccuracyM={geo.viewerAccuracyM}
-              status={geo.status}
-              usedFallback={geo.usedFallback}
-              tone="soft"
-              className="mt-0.5 block"
+              geoStatus={geo.status}
+              geoUsedFallback={geo.usedFallback}
             />
-          </div>
+          ) : null}
+        </div>
 
-          <div className="mt-8 border-t border-stone-100 pt-7">
-            <p className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#666666]">Rates</p>
-            <p className="font-display mt-2 text-xl font-medium leading-snug tracking-tight text-stone-900">
-              {priceFormatted.headline}
-            </p>
-            {priceFormatted.subline ? (
-              <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-[#666666]">{priceFormatted.subline}</p>
+        <div
+          className={`mx-auto max-w-6xl px-5 pb-8 ${isVenue ? "max-md:pb-4 md:pt-7" : "pt-7"}`}
+        >
+          <div className={isVenue ? "hidden md:block" : undefined}>
+            <p className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#0F766E]">{heroEyebrow}</p>
+
+            <div className="mt-2">
+              <h1 className="font-display text-[1.65rem] font-medium leading-[1.2] tracking-tight text-stone-900">
+                {venue.businessName}
+              </h1>
+              <p className="mt-1 text-[0.8125rem] font-normal leading-snug text-[#666666]">
+                {primaryPlaceLabel || locationLabel || "Kerala"}
+              </p>
+              <VenueDistanceText
+                venueLat={venue.lat}
+                venueLng={venue.lng}
+                viewerLat={geo.viewerLat}
+                viewerLng={geo.viewerLng}
+                viewerAccuracyM={geo.viewerAccuracyM}
+                status={geo.status}
+                usedFallback={geo.usedFallback}
+                tone="soft"
+                className="mt-0.5 block"
+              />
+            </div>
+
+            <div className="mt-8 border-t border-stone-100 pt-7">
+              <p className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#666666]">Rates</p>
+              <p className="font-display mt-2 text-xl font-medium leading-snug tracking-tight text-stone-900">
+                {priceFormatted.headline}
+              </p>
+              {priceFormatted.subline ? (
+                <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-[#666666]">{priceFormatted.subline}</p>
+              ) : null}
+            </div>
+
+            {isVenue && glanceHighlights.length ? (
+              <div className="mt-8">
+                <VenueHighlightsGrid items={glanceHighlights} />
+              </div>
             ) : null}
           </div>
-
-          {isVenue && glanceHighlights.length ? (
-            <div className="mt-8">
-              <VenueHighlightsGrid items={glanceHighlights} />
-            </div>
-          ) : null}
 
           {effectiveYmd && !demo ? (
             availabilityPending ? (

@@ -7,6 +7,8 @@ import {
   buildVenueDetailsPayload,
   extractCustomVenueDetails,
 } from "../../lib/venueDetails";
+import { SUITABLE_FOR_OPTIONS, VENUE_TYPE_OPTIONS } from "../../lib/venueHighlights";
+import { resolveVendorFormVenueHighlights } from "../../lib/buildVenueMobileSummary";
 import { DEFAULT_FACILITIES } from "../../lib/vendors";
 import {
   PHOTO_GALLERY_CATEGORIES,
@@ -174,6 +176,24 @@ export default function VendorProfileForm({ vendor, onSaved }) {
   );
   const [venueDetailMap, setVenueDetailMap] = useState(() => buildPredefinedDescriptionMap(vendor.venueDetails));
   const [venueDetailCustom, setVenueDetailCustom] = useState(() => extractCustomVenueDetails(vendor.venueDetails));
+  const initialVenueHighlights = useMemo(() => resolveVendorFormVenueHighlights(vendor), [vendor]);
+  const [venueType, setVenueType] = useState(() => initialVenueHighlights.venueType);
+  const [yearsInBusiness, setYearsInBusiness] = useState(() =>
+    initialVenueHighlights.yearsInBusiness != null ? String(initialVenueHighlights.yearsInBusiness) : "",
+  );
+  const [guestCapacity, setGuestCapacity] = useState(() =>
+    initialVenueHighlights.guestCapacity != null ? String(initialVenueHighlights.guestCapacity) : "",
+  );
+  const [diningCapacity, setDiningCapacity] = useState(() =>
+    initialVenueHighlights.diningCapacity != null ? String(initialVenueHighlights.diningCapacity) : "",
+  );
+  const [parkingCapacity, setParkingCapacity] = useState(() =>
+    initialVenueHighlights.parkingCapacity != null ? String(initialVenueHighlights.parkingCapacity) : "",
+  );
+  const [airConditioned, setAirConditioned] = useState(initialVenueHighlights.airConditioned);
+  const [stageAvailable, setStageAvailable] = useState(initialVenueHighlights.stageAvailable);
+  const [wheelchairAccessible, setWheelchairAccessible] = useState(initialVenueHighlights.wheelchairAccessible);
+  const [suitableFor, setSuitableFor] = useState(() => [...initialVenueHighlights.suitableFor]);
   const [galleryUrlInput, setGalleryUrlInput] = useState("");
   const [customFacilityLine, setCustomFacilityLine] = useState("");
   const [photoTagline, setPhotoTagline] = useState(initialPhotographer.tagline);
@@ -188,7 +208,31 @@ export default function VendorProfileForm({ vendor, onSaved }) {
   useEffect(() => {
     setVenueDetailMap(buildPredefinedDescriptionMap(vendor.venueDetails));
     setVenueDetailCustom(extractCustomVenueDetails(vendor.venueDetails));
-  }, [vendor.id, JSON.stringify(vendor.venueDetails ?? null)]);
+    const highlights = resolveVendorFormVenueHighlights(vendor);
+    setVenueType(highlights.venueType);
+    setYearsInBusiness(highlights.yearsInBusiness != null ? String(highlights.yearsInBusiness) : "");
+    setGuestCapacity(highlights.guestCapacity != null ? String(highlights.guestCapacity) : "");
+    setDiningCapacity(highlights.diningCapacity != null ? String(highlights.diningCapacity) : "");
+    setParkingCapacity(highlights.parkingCapacity != null ? String(highlights.parkingCapacity) : "");
+    setAirConditioned(highlights.airConditioned);
+    setStageAvailable(highlights.stageAvailable);
+    setWheelchairAccessible(highlights.wheelchairAccessible);
+    setSuitableFor([...highlights.suitableFor]);
+  }, [
+    vendor.id,
+    JSON.stringify(vendor.venueDetails ?? null),
+    vendor.venueType,
+    vendor.yearsInBusiness,
+    vendor.guestCapacity,
+    vendor.diningCapacity,
+    vendor.parkingCapacity,
+    vendor.airConditioned,
+    vendor.stageAvailable,
+    vendor.wheelchairAccessible,
+    JSON.stringify(vendor.suitableFor ?? null),
+    vendor.capacity,
+    JSON.stringify(vendor.facilities ?? null),
+  ]);
 
   useEffect(() => {
     setPhotoPackages(buildInitialPhotoPackageRows(vendor));
@@ -620,6 +664,15 @@ export default function VendorProfileForm({ vendor, onSaved }) {
       return;
     }
     if (category === "Venue") {
+      if (!venueType.trim()) {
+        setError("Please select a venue type under Venue Highlights.");
+        return;
+      }
+      const guestNum = parseInt(String(guestCapacity).trim(), 10);
+      if (!Number.isFinite(guestNum) || guestNum < 1) {
+        setError("Please enter guest capacity (minimum 1) under Venue Highlights.");
+        return;
+      }
       for (const t of PREDEFINED_VENUE_DETAIL_TITLES) {
         if (!venueDetailMap[t]?.trim()) {
           setError(`Please fill in Venue Details — ${t}.`);
@@ -635,7 +688,7 @@ export default function VendorProfileForm({ vendor, onSaved }) {
     }
     const otpEnforcementOff =
       String(process.env.NEXT_PUBLIC_VENDOR_OTP_ENFORCE ?? "").trim() === "0";
-    if (!otpEnforcementOff && !vendorOtpSessionRef.current?.trim()) {
+    if (!otpEnforcementOff && !vendorOtpSessionRef.current?.trim() && !isWhatsAppVerified) {
       setError(
         "Verify your WhatsApp OTP before saving. Tap Send WhatsApp OTP, enter the code we send to your registered number, then save.",
       );
@@ -771,6 +824,17 @@ export default function VendorProfileForm({ vendor, onSaved }) {
         }
       }
       if (category === "Venue") {
+        payload.venueHighlights = {
+          venueType: venueType.trim(),
+          yearsInBusiness: yearsInBusiness.trim() || null,
+          guestCapacity: guestCapacity.trim(),
+          diningCapacity: diningCapacity.trim() || null,
+          parkingCapacity: parkingCapacity.trim() || null,
+          airConditioned,
+          stageAvailable,
+          wheelchairAccessible,
+          suitableFor,
+        };
         payload.venueDetails = buildVenueDetailsPayload(venueDetailMap, venueDetailCustom);
         payload.facilities = [];
       } else if (category === "Photographer" || category === "Makeup") {
@@ -1141,11 +1205,12 @@ export default function VendorProfileForm({ vendor, onSaved }) {
           />
           {isWhatsAppVerified ? (
             <p className="mt-2 text-xs text-stone-600">
-              This number is verified for WhatsApp and saved on your profile. You still need a valid session to save other profile fields.
+              This number is verified for WhatsApp. You can save profile changes below. Change the number to re-verify.
             </p>
           ) : (
             <p className="mt-2 text-xs text-stone-600">
-              WhatsApp OTP is sent to the <strong className="font-semibold text-stone-700">number in this field</strong>. After you verify, that number is saved on your profile. You still need a valid session to save other profile fields.
+              WhatsApp OTP is sent to the <strong className="font-semibold text-stone-700">number in this field</strong>.
+              Verify the code before saving your profile.
             </p>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1407,6 +1472,185 @@ export default function VendorProfileForm({ vendor, onSaved }) {
           ) : null}
         </div>
       </section>
+
+      {category === "Venue" ? (
+        <section className="space-y-5">
+          <div>
+            <h2 className="font-display text-lg font-semibold text-brand-950">Venue Highlights</h2>
+            <p className="mt-1 text-sm text-stone-600">
+              Structured summary data for your mobile profile card, search filters, and listing badges. Keep the
+              detailed Venue Details section below for full specifications.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-stone-200/90 bg-white p-4 sm:p-6">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-semibold text-stone-800" htmlFor="vh-venue-type">
+                  Venue type <span className="text-red-600">*</span>
+                </label>
+                <select
+                  id="vh-venue-type"
+                  value={venueType}
+                  onChange={(e) => setVenueType(e.target.value)}
+                  required
+                  className="mt-2 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none ring-brand-500/25 transition focus:border-brand-500 focus:ring-2"
+                >
+                  <option value="">Select venue type…</option>
+                  {VENUE_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-800" htmlFor="vh-years">
+                  Years in business
+                </label>
+                <input
+                  id="vh-years"
+                  type="number"
+                  min={0}
+                  value={yearsInBusiness}
+                  onChange={(e) => setYearsInBusiness(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3 text-sm outline-none ring-brand-500/25 transition focus:border-brand-500 focus:ring-2"
+                  placeholder="e.g. 10"
+                />
+                <p className="mt-1 text-xs text-stone-500">Shown as “10+ Years Hosting Events” on your profile.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-800" htmlFor="vh-guest-capacity">
+                  Guest capacity <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="vh-guest-capacity"
+                  type="number"
+                  min={1}
+                  required
+                  value={guestCapacity}
+                  onChange={(e) => setGuestCapacity(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3 text-sm outline-none ring-brand-500/25 transition focus:border-brand-500 focus:ring-2"
+                  placeholder="e.g. 800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-800" htmlFor="vh-dining-capacity">
+                  Dining capacity
+                </label>
+                <input
+                  id="vh-dining-capacity"
+                  type="number"
+                  min={0}
+                  value={diningCapacity}
+                  onChange={(e) => setDiningCapacity(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3 text-sm outline-none ring-brand-500/25 transition focus:border-brand-500 focus:ring-2"
+                  placeholder="e.g. 350"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-800" htmlFor="vh-parking-capacity">
+                  Parking capacity
+                </label>
+                <input
+                  id="vh-parking-capacity"
+                  type="number"
+                  min={0}
+                  value={parkingCapacity}
+                  onChange={(e) => setParkingCapacity(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3 text-sm outline-none ring-brand-500/25 transition focus:border-brand-500 focus:ring-2"
+                  placeholder="e.g. 80"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-stone-200 bg-stone-50/60 px-4 py-3 text-sm font-medium text-stone-800">
+                <input
+                  type="checkbox"
+                  checked={airConditioned}
+                  onChange={(e) => setAirConditioned(e.target.checked)}
+                  className="h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+                />
+                Fully AC
+              </label>
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-stone-200 bg-stone-50/60 px-4 py-3 text-sm font-medium text-stone-800">
+                <input
+                  type="checkbox"
+                  checked={stageAvailable}
+                  onChange={(e) => setStageAvailable(e.target.checked)}
+                  className="h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+                />
+                Stage available
+              </label>
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-stone-200 bg-stone-50/60 px-4 py-3 text-sm font-medium text-stone-800">
+                <input
+                  type="checkbox"
+                  checked={wheelchairAccessible}
+                  onChange={(e) => setWheelchairAccessible(e.target.checked)}
+                  className="h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+                />
+                Wheelchair accessible
+              </label>
+            </div>
+
+            <div className="mt-6">
+              <p className="text-sm font-semibold text-stone-800">
+                Suitable for <span className="text-red-600">*</span>
+              </p>
+              <p className="mt-1 text-xs text-stone-500">
+                Select every event type your venue is equipped to host. Leave none selected only if you are still
+                defining your offering.
+              </p>
+              <div className="mt-3 flex flex-wrap justify-start gap-2">
+                {SUITABLE_FOR_OPTIONS.map((option) => {
+                  const active = suitableFor.includes(option);
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => {
+                        setSuitableFor((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(option)) next.delete(option);
+                          else next.add(option);
+                          return SUITABLE_FOR_OPTIONS.filter((item) => next.has(item));
+                        });
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 ${
+                        active
+                          ? "border-brand-600 bg-brand-50 text-brand-900 ring-1 ring-brand-600/15"
+                          : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300"
+                      }`}
+                    >
+                      {active ? (
+                        <svg
+                          aria-hidden
+                          className="h-3.5 w-3.5 shrink-0 text-brand-700"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.704 5.29a1 1 0 0 1 0 1.42l-7.25 7.25a1 1 0 0 1-1.42 0l-3.25-3.25a1 1 0 1 1 1.42-1.42l2.54 2.54 6.54-6.54a1 1 0 0 1 1.42 0Z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      ) : null}
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {category === "Venue" ? (
         <section className="space-y-5">

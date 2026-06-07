@@ -4,7 +4,7 @@ import {
   verifyVendorProfileSessionPass,
 } from "../../../lib/otp/vendorSessionPass";
 import { requireVendor, vendorGateErrorMessage } from "../../../lib/supabaseAuth";
-import { updateVendorProfile } from "../../../lib/vendors";
+import { updateVendorProfile, vendorHasActiveVerifiedPhone } from "../../../lib/vendors";
 import { normalizeWhatsAppRecipientDigits } from "../../../lib/whatsappPhone";
 import { reindexVendorMediaToWeaviate } from "../../../lib/weaviateIngest";
 
@@ -48,30 +48,37 @@ export default async function handler(req, res) {
         headerRaw.trim() ||
         (typeof body?.vendorOtpSession === "string" ? body.vendorOtpSession.trim() : "");
 
+      let sess = null;
       if (!session) {
-        console.warn(`${LOG_PREFIX} PATCH rejected: missing x-vendor-whatsapp-otp-session`, { userId: gate.user.id });
-        return res.status(403).json({
-          ok: false,
-          error:
-            "Missing x-vendor-whatsapp-otp-session. Send WhatsApp OTP, verify the code, then save with that header.",
-        });
+        const phoneInBody = body && typeof body === "object" && "phone" in body ? body.phone : undefined;
+        const verifiedPhoneOk = await vendorHasActiveVerifiedPhone(gate.user.id, phoneInBody);
+        if (!verifiedPhoneOk) {
+          console.warn(`${LOG_PREFIX} PATCH rejected: missing x-vendor-whatsapp-otp-session`, {
+            userId: gate.user.id,
+          });
+          return res.status(403).json({
+            ok: false,
+            error:
+              "Missing x-vendor-whatsapp-otp-session. Send WhatsApp OTP, verify the code, then save with that header.",
+          });
+        }
+      } else {
+        sess = verifyVendorProfileSessionPass(session, gate.user.id);
+        if (!sess.ok) {
+          console.warn(`${LOG_PREFIX} PATCH rejected: invalid or expired session`, {
+            userId: gate.user.id,
+            reason: sess.error,
+          });
+          return res.status(403).json({
+            ok: false,
+            error:
+              sess.error ||
+              "WhatsApp OTP session invalid or expired. Request a new code, verify, and try saving again.",
+          });
+        }
       }
 
-      const sess = verifyVendorProfileSessionPass(session, gate.user.id);
-      if (!sess.ok) {
-        console.warn(`${LOG_PREFIX} PATCH rejected: invalid or expired session`, {
-          userId: gate.user.id,
-          reason: sess.error,
-        });
-        return res.status(403).json({
-          ok: false,
-          error:
-            sess.error ||
-            "WhatsApp OTP session invalid or expired. Request a new code, verify, and try saving again.",
-        });
-      }
-
-      if (sess.ok && sess.verifiedPhoneDigits && body && typeof body === "object" && "phone" in body) {
+      if (sess?.ok && sess.verifiedPhoneDigits && body && typeof body === "object" && "phone" in body) {
         const pd = normalizeWhatsAppRecipientDigits(String(body.phone ?? ""));
         if (pd && pd !== sess.verifiedPhoneDigits) {
           console.warn(`${LOG_PREFIX} PATCH rejected: phone differs from WhatsApp-verified number`, {
@@ -97,6 +104,7 @@ export default async function handler(req, res) {
       venueDetailsDropped,
       photographerProfileDropped,
       makeupProfileDropped,
+      venueHighlightsDropped,
     } = await updateVendorProfile(gate.user.id, patch);
     if (error) {
       const code = error.message === "No vendor profile" ? 404 : 400;
@@ -127,6 +135,11 @@ export default async function handler(req, res) {
     if (makeupProfileDropped) {
       warnings.push(
         "Makeup profile fields were not saved: add column `makeup_profile` on public.vendors (run supabase/migrations/009_makeup_profile.sql in the Supabase SQL editor), then save again.",
+      );
+    }
+    if (venueHighlightsDropped) {
+      warnings.push(
+        "Some venue highlight fields were not saved because your database is missing one or more highlight columns. Run supabase/migrations/016_venue_highlights.sql and 017_venue_suitable_for.sql in the Supabase SQL editor, then save again.",
       );
     }
     const warning = warnings.length ? warnings.join(" ") : undefined;

@@ -26,6 +26,11 @@ export default function AdminVendorsPage() {
   const [mediaBusy, setMediaBusy] = useState(/** @type {null | "profile" | "gallery"} */ (null));
   const [profileUrlDraft, setProfileUrlDraft] = useState("");
   const [galleryUrlDraft, setGalleryUrlDraft] = useState("");
+  const [featuredVenue, setFeaturedVenue] = useState(false);
+  const [verifiedVenue, setVerifiedVenue] = useState(false);
+  const [venueFlagsSaving, setVenueFlagsSaving] = useState(false);
+  const [venueFlagsErr, setVenueFlagsErr] = useState("");
+  const [venueFlagsOk, setVenueFlagsOk] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -63,9 +68,13 @@ export default function AdminVendorsPage() {
     const id = selectedVendor.id;
     setCoordLat(selectedVendor.lat != null ? String(selectedVendor.lat) : "");
     setCoordLng(selectedVendor.lng != null ? String(selectedVendor.lng) : "");
+    setFeaturedVenue(Boolean(selectedVendor.featuredVenue));
+    setVerifiedVenue(Boolean(selectedVendor.verifiedVenue));
     if (prevId !== id) {
       setCoordErr("");
       setCoordOk(false);
+      setVenueFlagsErr("");
+      setVenueFlagsOk(false);
     }
     selectedVendorIdRef.current = id;
   }, [selectedVendor]);
@@ -124,12 +133,43 @@ export default function AdminVendorsPage() {
   async function patchStatus(id, action) {
     setActionLoading(true);
     const res = await fetch(`/api/admin/vendor/${id}/${action}`, { method: "PATCH" });
+    const data = await res.json().catch(() => ({}));
     setActionLoading(false);
     if (!res.ok) return;
     if (selectedVendor?.id === id) {
-      setSelectedVendor((prev) => (prev ? { ...prev, status: action === "approve" ? "approved" : "rejected" } : prev));
+      if (data.vendor) {
+        setSelectedVendor(data.vendor);
+      } else {
+        setSelectedVendor((prev) => (prev ? { ...prev, status: action === "approve" ? "approved" : "rejected" } : prev));
+      }
     }
     await load();
+  }
+
+  async function saveVenueFlags() {
+    if (!selectedVendor || selectedVendor.category !== "Venue") return;
+    setVenueFlagsSaving(true);
+    setVenueFlagsErr("");
+    setVenueFlagsOk(false);
+    try {
+      const res = await fetch(`/api/admin/vendor/${selectedVendor.id}/venue-flags`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featuredVenue, verifiedVenue }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setVenueFlagsErr(data.error || "Could not save venue flags");
+        return;
+      }
+      if (data.vendor) setSelectedVendor(data.vendor);
+      setVenueFlagsOk(true);
+      await load();
+    } catch {
+      setVenueFlagsErr("Network error");
+    } finally {
+      setVenueFlagsSaving(false);
+    }
   }
 
   async function deleteVendor(id, businessName) {
@@ -537,6 +577,49 @@ export default function AdminVendorsPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Description</p>
                 <p className="mt-1 text-sm leading-relaxed text-stone-700">{selectedVendor.description || "No description provided."}</p>
               </section>
+
+              {selectedVendor.category === "Venue" ? (
+                <section className="rounded-xl border border-amber-200/70 bg-amber-50/40 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Venue badges (admin only)</p>
+                  <p className="mt-1 text-xs leading-relaxed text-stone-600">
+                    Controls featured and verified badges on the public mobile summary card. Vendors cannot edit these.
+                  </p>
+                  <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm font-medium text-stone-800">
+                      <input
+                        type="checkbox"
+                        checked={featuredVenue}
+                        onChange={(e) => setFeaturedVenue(e.target.checked)}
+                        className="h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+                      />
+                      Featured Venue
+                    </label>
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm font-medium text-stone-800">
+                      <input
+                        type="checkbox"
+                        checked={verifiedVenue}
+                        onChange={(e) => setVerifiedVenue(e.target.checked)}
+                        className="h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+                      />
+                      Verified Venue
+                    </label>
+                  </div>
+                  {venueFlagsErr ? <p className="mt-2 text-xs font-medium text-red-700">{venueFlagsErr}</p> : null}
+                  <button
+                    type="button"
+                    disabled={venueFlagsSaving || actionLoading}
+                    onClick={saveVenueFlags}
+                    className="mt-3 rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {venueFlagsSaving ? "Saving…" : "Save venue badges"}
+                  </button>
+                  {venueFlagsOk ? (
+                    <p className="mt-2 text-xs font-semibold text-emerald-800" role="status">
+                      Venue badges saved
+                    </p>
+                  ) : null}
+                </section>
+              ) : null}
 
               <section className="rounded-xl border border-brand-200/60 bg-brand-50/40 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand-800">Map coordinates (admin only)</p>
