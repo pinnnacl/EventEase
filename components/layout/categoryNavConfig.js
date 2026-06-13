@@ -13,6 +13,14 @@ export const CATEGORY_NAV_ITEMS = [
 /** Mobile header: Venues, Photography, Makeup (Home lives in bottom nav). */
 export const MOBILE_HEADER_NAV_ITEMS = CATEGORY_NAV_ITEMS.filter((i) => i.key !== "home");
 
+/** Desktop home secondary row — asset SVG icons (mobile nav unchanged). */
+export const DESKTOP_HOME_CATEGORY_ITEMS = [
+  { key: "home", label: "Home", href: "/", iconSrc: homeIcon.src },
+  { key: "venues", label: "Venue", href: "/venues", iconSrc: venuesIcon.src },
+  { key: "photography", label: "Photography", href: "/photography", iconSrc: photographyIcon.src },
+  { key: "makeup", label: "Makeup", href: "/makeup", iconSrc: makeupIcon.src },
+];
+
 /**
  * @param {string} pathname
  * @param {string} [href]

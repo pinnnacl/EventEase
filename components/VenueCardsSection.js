@@ -42,7 +42,7 @@ export default function VenueCardsSection({ venues = [], loadError = false, load
         ) : (
           <>
             {/* Mobile & tablet: horizontal snap scroll (below lg) */}
-            <div className="-mx-[var(--ee-container-px)] min-w-0 lg:mx-0">
+            <div className="-mx-[var(--ee-container-px)] min-w-0 lg:hidden">
               <div className="overflow-x-auto overflow-y-visible pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
                 <ul className="flex w-max snap-x snap-mandatory gap-4 py-1 pl-[var(--ee-container-px)] pr-[var(--ee-container-px)] sm:gap-5">
                   {featured.map((venue) => (

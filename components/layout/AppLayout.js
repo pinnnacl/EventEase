@@ -6,6 +6,7 @@ import logoSvg from "../../assets/logo.svg";
 import { useCustomerAuth } from "../../context/CustomerAuthContext";
 import { useWishlist } from "../../context/WishlistContext";
 import HeaderHeart from "../HeaderHeart";
+import HomeDesktopHeader from "../home/HomeDesktopHeader";
 import AiSearchExperience from "./AiSearchExperience";
 import MobileBottomNav from "./MobileBottomNav";
 import MobileHeaderAiSearch from "./MobileHeaderAiSearch";
@@ -229,7 +230,7 @@ export default function AppLayout({ children }) {
         ref={setHeaderEl}
         className="sticky top-0 z-[60] isolate w-full max-w-none p-0 m-0"
       >
-        <div className="w-full max-w-none border-b border-stone-200/50 bg-background">
+        <div className={`w-full max-w-none border-b border-stone-200/50 bg-background${isHome ? " lg:border-b-0" : ""}`}>
           {/* Mobile & small tablet: nav + optional AI (home); no logo, wishlist, account, vendor menu */}
           <div className="lg:hidden">
             <div className="px-container-fluid pt-1.5 pb-1">
@@ -243,8 +244,24 @@ export default function AppLayout({ children }) {
             {isHome ? <MobileHeaderAiSearch /> : null}
           </div>
 
-          {/* Desktop (lg+): unchanged — logo, full nav, wishlist, account, vendor menu */}
+          {/* Desktop (lg+): home marketplace header vs default site header */}
           <div className="hidden lg:block">
+            {isHome ? (
+              <HomeDesktopHeader
+                wishlistCount={wishlistCount}
+                checked={checked}
+                customer={customer}
+                legacyLogin={legacyLogin}
+                accountMenuOpen={accountMenuOpen}
+                setAccountMenuOpen={setAccountMenuOpen}
+                vendorMenuOpen={vendorMenuOpen}
+                setVendorMenuOpen={setVendorMenuOpen}
+                accountMenuRef={accountMenuRef}
+                vendorMenuRef={vendorMenuRef}
+                openLoginModal={openLoginModal}
+                handleLogout={handleLogout}
+              />
+            ) : (
             <div className="relative flex h-[70px] items-center gap-2.5 px-container-fluid">
               <Link
                 href="/"
@@ -417,6 +434,7 @@ export default function AppLayout({ children }) {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       </header>
@@ -426,7 +444,7 @@ export default function AppLayout({ children }) {
       )}
 
       <div
-        className={`flex min-w-0 w-full flex-1 flex-col overflow-x-hidden lg:overflow-x-visible lg:pb-0 ${
+        className={`flex min-w-0 w-full flex-1 flex-col overflow-x-hidden lg:pb-0 ${
           isVenueDetailRoute || isPhotographyDetailRoute
             ? "pb-0"
             : "pb-[calc(5.25rem+env(safe-area-inset-bottom))]"

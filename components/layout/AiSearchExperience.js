@@ -3,8 +3,8 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 import { useWishlist } from "../../context/WishlistContext";
 import { useHomeAiSearch } from "../../context/HomeAiSearchContext";
-import bannerImage from "../../assets/banner2.webp";
-import SearchSuggestions from "./SearchSuggestions";
+import HomeDesktopHero from "../home/HomeDesktopHero";
+import HomeDesktopFeatureGrid from "../home/HomeDesktopFeatureGrid";
 import WishlistSegmentedActions from "./WishlistSegmentedActions";
 import {
   locationLabelToCityParam,
@@ -34,62 +34,6 @@ function SearchIcon({ className }) {
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
     </svg>
-  );
-}
-
-/**
- * @param {{
- *  value: string;
- *  onChange: (v: string) => void;
- *  onSubmit: () => void;
- *  loading?: boolean;
- *  inputRef?: import("react").RefObject<HTMLInputElement | null>
- * }} props
- */
-function AiSearchHeroBar({ value, onChange, onSubmit, loading = false, inputRef }) {
-  return (
-    <div className={`mx-auto w-full max-w-[600px] origin-top transition-transform ${TRANSITION}`}>
-      <div
-        className={`group relative w-full overflow-hidden rounded-[12px] border border-[#D8E4E7] bg-white/85 shadow-[0_10px_30px_-22px_rgba(20,43,60,0.25)] backdrop-blur-md transition ${TRANSITION} hover:shadow-[0_14px_36px_-22px_rgba(20,43,60,0.32)] focus-within:border-[#0F766E]/45 focus-within:shadow-[0_12px_34px_-22px_rgba(20,43,60,0.3)]`}
-      >
-        <div className="flex items-center gap-3 px-5 py-3.5 sm:gap-3.5 sm:px-6 sm:py-4">
-          <span className="shrink-0 text-slate-500" aria-hidden>
-            <svg className="h-4 w-4 sm:h-[1.125rem] sm:w-[1.125rem]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12l.7 2.1L8 15l-2.3.9L5 18l-.7-2.1L2 15l2.3-.9L5 12z" />
-            </svg>
-          </span>
-
-          <input
-            id="home-ai-desktop-search-input"
-            ref={inputRef || undefined}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                onSubmit();
-              }
-            }}
-            placeholder="Search smarter with AI"
-            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-500 focus:ring-0 sm:text-base"
-          />
-
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={loading}
-            aria-label="Curate"
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-r from-[#5A45F5] to-[#4F39F2] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(79,57,242,0.65)] transition duration-200 ease-out hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#635bff]/45 focus-visible:ring-offset-2 active:translate-y-[1px]"
-          >
-            <span>Curate</span>
-            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7 4l6 6-6 6" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -540,9 +484,6 @@ export default function AiSearchExperience({ headerEl }) {
   }
 
   const {
-    aiPrompt,
-    setAiPrompt,
-    runAiSearch,
     aiLoading,
     aiResults,
     aiAnswer,
@@ -550,8 +491,6 @@ export default function AiSearchExperience({ headerEl }) {
     aiError,
     aiSearched,
     aiUnavailable,
-    handleSuggestionSelect,
-    aiInputRef,
   } = homeAi;
 
   const resultsPanel = aiSearched ? (
@@ -567,39 +506,14 @@ export default function AiSearchExperience({ headerEl }) {
 
   return (
     <>
-      {/* Desktop: banner hero + in-flow AI search */}
-      <section className="relative isolate hidden w-full overflow-hidden border-0 bg-transparent shadow-none lg:block">
-        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10" aria-hidden>
-          <img src={bannerImage.src} alt="" className="h-auto w-full object-cover object-center" />
-        </div>
-        <div className={`grid transition-[grid-template-rows] ${TRANSITION} grid-rows-[1fr]`}>
-          <div className="min-h-0 overflow-hidden">
-            <div className={`px-container-fluid transition ${TRANSITION} pb-12 pt-16 opacity-100`}>
-              <div className={`mx-auto w-full max-w-4xl transition ${TRANSITION} will-change-transform scale-100`}>
-                <div className="mx-auto mb-7 max-w-3xl text-center">
-                  <h1 className="font-display text-[36px] font-semibold leading-tight tracking-tight text-[#0F172A]">
-                    Plan your dream wedding with AI
-                  </h1>
-                  <p className="mx-auto mt-2.5 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
-                    Tell us your style, date, and budget — we’ll curate venues and services that fit.
-                  </p>
-                </div>
-                <AiSearchHeroBar
-                  value={aiPrompt}
-                  onChange={setAiPrompt}
-                  onSubmit={runAiSearch}
-                  loading={aiLoading}
-                  inputRef={null}
-                />
-                <div className="mt-4">
-                  <SearchSuggestions onSelect={handleSuggestionSelect} />
-                </div>
-                {resultsPanel ? <div className="mt-5">{resultsPanel}</div> : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HomeDesktopHero />
+      <HomeDesktopFeatureGrid />
+
+      {resultsPanel ? (
+        <section className="hidden w-full border-b border-gray-100 bg-white lg:block" aria-live="polite">
+          <div className="mx-auto max-w-7xl px-6 py-8">{resultsPanel}</div>
+        </section>
+      ) : null}
 
       {/* Mobile: AI lives in sticky header; only show results below header when user has searched */}
       {resultsPanel ? (
