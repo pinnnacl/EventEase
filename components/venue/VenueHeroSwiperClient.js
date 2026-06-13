@@ -11,10 +11,11 @@ import "swiper/css/pagination";
  * @param {{
  *   slides: { url: string; responsive?: { thumb: string; medium: string; large: string } | null }[];
  *   imageClassName?: string;
+ *   autoHeight?: boolean;
  *   onOpenGallery?: () => void;
  * }} props
  */
-export default function VenueHeroSwiperClient({ slides, imageClassName = "", onOpenGallery }) {
+export default function VenueHeroSwiperClient({ slides, imageClassName = "", autoHeight = false, onOpenGallery }) {
   if (!slides?.length) return null;
 
   const showPagination = slides.length > 1;
@@ -25,7 +26,8 @@ export default function VenueHeroSwiperClient({ slides, imageClassName = "", onO
       slidesPerView={1}
       spaceBetween={0}
       speed={320}
-      className="venue-hero-swiper h-full w-full cursor-pointer"
+      autoHeight={autoHeight}
+      className={`venue-hero-swiper w-full cursor-pointer${autoHeight ? "" : " h-full"}`}
       onClick={() => onOpenGallery?.()}
       pagination={
         showPagination
@@ -38,7 +40,7 @@ export default function VenueHeroSwiperClient({ slides, imageClassName = "", onO
       }
     >
       {slides.map((slide, i) => (
-        <SwiperSlide key={`${slide.url}-${i}`} className="!h-full">
+        <SwiperSlide key={`${slide.url}-${i}`} className={autoHeight ? "!h-auto" : "!h-full"}>
           <ResponsiveVendorImage
             responsive={slide.responsive}
             src={slide.url}

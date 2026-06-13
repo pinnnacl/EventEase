@@ -13,18 +13,27 @@ import { parseVenueProximityPoints } from "../../lib/parseVenueProximity";
 import { snapVenueDetailToTop } from "../../lib/venueDetailScroll";
 import { readStoredEventDateYmd } from "../../lib/wishlistActions";
 import { getPublicVenueDetailRows } from "../../lib/venueDetails";
-import AmenityChips from "./AmenityChips";
-import ReviewList from "./ReviewList";
-import SectionContainer from "./SectionContainer";
 import SectionTabs from "./SectionTabs";
+import VenueDesktopBookingSidebar from "./VenueDesktopBookingSidebar";
+import VenueDesktopMediaHeader from "./VenueDesktopMediaHeader";
 import VenueDetailStickyBar from "./VenueDetailStickyBar";
+import VenueProfileMainSections from "./VenueProfileMainSections";
 import VenueGallery, { useIsLgViewport, useVenueHeroGallery, VenueHeroGallery } from "./VenueGallery";
-import VenueDetailsRows from "./VenueDetailsRows";
 import VenueHighlightsGrid from "./VenueHighlightsGrid";
-import VenueMapEmbed from "./VenueMapEmbed";
 import VenueMobileFloatingSummaryCard from "./VenueMobileFloatingSummaryCard";
-import VenuePricingPremium from "./VenuePricingPremium";
-import VenueProximityList from "./VenueProximityList";
+
+/** @returns {boolean} */
+function useIsMdViewport() {
+  const [isMd, setIsMd] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setIsMd(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return isMd;
+}
 
 function IconUsers({ className }) {
   return (
@@ -126,6 +135,7 @@ export default function VenueDetailView({
     [galleryResponsive, venue.profileImageResponsive],
   );
   const isLgViewport = useIsLgViewport();
+  const isMdViewport = useIsMdViewport();
   const { slides: heroSlides, swiperEnabled: heroSwiperEnabled } = useVenueHeroGallery(
     venue.id,
     images[0],
@@ -259,10 +269,12 @@ export default function VenueDetailView({
 
   const sectionTabsForNav = useMemo(
     () =>
-      VENUE_SECTION_TABS.map((t) =>
+      VENUE_SECTION_TABS.filter(
+        (t) => !isVenue || isMdViewport || t.id !== "venue-section-photos",
+      ).map((t) =>
         t.id === "venue-section-venue-details" ? { ...t, label: isVenue ? "Venue Details" : "Highlights" } : t,
       ),
-    [isVenue],
+    [isVenue, isMdViewport],
   );
 
   const highlights = useMemo(() => {
@@ -275,6 +287,15 @@ export default function VenueDetailView({
       .map((r) => r.title);
   }, [venue.facilities, venue.venueDetails, isVenue]);
   const heroEyebrow = isVenue ? "Venue" : venue.category || "Vendor";
+
+  const experienceDescription = useMemo(
+    () =>
+      venue.description?.trim() ||
+      (isVenue
+        ? "This venue is listed on THAALI. Contact the host for full details, packages, and availability."
+        : "This vendor is listed on THAALI. Review pricing and portfolio details below."),
+    [venue.description, isVenue],
+  );
 
   const locationLabel = [venue.city, venue.state].filter(Boolean).join(", ") || venue.location || "";
   /** Location card + map caption: vendor `place` only (e.g. Thiruvankulam). Never venue name or full address. */
@@ -367,11 +388,18 @@ export default function VenueDetailView({
 
   const scrollToSection = useCallback((id) => {
     setActiveSectionId(id);
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const candidates = document.querySelectorAll(`#${CSS.escape(id)}`);
+    const visible = [...candidates].find((el) => el.getClientRects().length > 0);
+    (visible ?? candidates[0])?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   useEffect(() => {
-    const elements = sectionTabsForNav.map((t) => document.getElementById(t.id)).filter(Boolean);
+    const elements = sectionTabsForNav
+      .map((t) => {
+        const candidates = document.querySelectorAll(`#${CSS.escape(t.id)}`);
+        return [...candidates].find((el) => el.getClientRects().length > 0) ?? candidates[0] ?? null;
+      })
+      .filter(Boolean);
     if (elements.length === 0) return undefined;
 
     const observer = new IntersectionObserver(
@@ -506,7 +534,8 @@ export default function VenueDetailView({
         </div>
       </section>
 
-      {/* Desktop: floating card hero */}
+      {/* Desktop: legacy hero (non-venue categories only) */}
+      {!isVenue ? (
       <section className="relative hidden border-b border-stone-200/80 bg-white lg:block">
         <div className="mx-auto w-full max-w-6xl px-4 pt-8 lg:px-8">
           <div className="pb-[clamp(6rem,16vw,8.5rem)]">
@@ -596,8 +625,65 @@ export default function VenueDetailView({
           </div>
         </div>
       </section>
+      ) : null}
 
-      <div className="border-b border-stone-100 bg-white">
+      {/* Desktop venue: asymmetric split canvas */}
+      {isVenue ? (
+        <div className="hidden border-b border-stone-100 bg-white lg:block">
+          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 py-8 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <VenueDesktopMediaHeader
+                businessName={venue.businessName}
+                images={images}
+                galleryResponsive={galleryResponsive}
+                heroSlides={heroSlides}
+                swiperEnabled={heroSwiperEnabled}
+                isLgViewport={isLgViewport}
+                onOpenGallery={openGallery}
+              />
+              <div className="sticky top-0 z-20 mt-8 border-b border-stone-100/90 bg-white/95 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/90">
+                <SectionTabs tabs={sectionTabsForNav} activeId={activeSectionId} onSelect={scrollToSection} />
+              </div>
+              <div className="space-y-16 py-10 pb-32">
+                <VenueProfileMainSections
+                  isVenue={isVenue}
+                  experienceDescription={experienceDescription}
+                  highlights={highlights}
+                  proximityPoints={proximityPoints}
+                  mapQuery={mapQuery}
+                  primaryPlaceLabel={primaryPlaceLabel}
+                  locationLabel={locationLabel}
+                  venue={venue}
+                  amenityItems={amenityItems}
+                  activeTag={activeTag}
+                  setActiveTag={setActiveTag}
+                  inquire={inquire}
+                  demo={demo}
+                  inquireSending={inquireSending}
+                  images={images}
+                  galleryResponsive={galleryResponsive}
+                  setLightbox={setLightbox}
+                  priceDisplay={priceDisplay}
+                  pricingBullets={pricingBullets}
+                  reviewItems={reviewItems}
+                />
+              </div>
+            </div>
+            <div className="lg:col-span-1">
+              <VenueDesktopBookingSidebar
+                venue={venue}
+                priceRange={priceDisplay}
+                demo={demo}
+                sending={inquireSending}
+                onBookNow={scrollToPricing}
+                onRequestQuote={inquire}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className={`border-b border-stone-100 bg-white ${isVenue ? "lg:hidden" : ""}`}>
         <div className="sticky top-0 z-20 border-b border-stone-100/90 bg-white/95 px-4 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/90 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <SectionTabs tabs={sectionTabsForNav} activeId={activeSectionId} onSelect={scrollToSection} />
@@ -605,114 +691,28 @@ export default function VenueDetailView({
         </div>
 
         <div className="mx-auto max-w-6xl space-y-16 px-4 py-10 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:space-y-20 sm:px-6 lg:px-8 lg:py-14 lg:pb-32">
-          <SectionContainer
-            id="venue-section-about"
-            title={
-              <span className="font-display text-2xl font-semibold tracking-tight text-stone-900 sm:text-[1.65rem]">
-                {isVenue ? "The experience" : "About"}
-              </span>
-            }
-          >
-            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 lg:items-start">
-              <div className="space-y-8">
-                <p className="whitespace-pre-line text-base leading-[1.75] text-stone-600">
-                  {venue.description?.trim() ||
-                    (isVenue
-                      ? "This venue is listed on THAALI. Contact the host for full details, packages, and availability."
-                      : "This vendor is listed on THAALI. Review pricing and portfolio details below.")}
-                </p>
-                {highlights.length ? (
-                  <ul className="space-y-3">
-                    {highlights.map((h) => (
-                      <li key={h} className="flex items-center gap-3 text-sm font-medium text-stone-800">
-                        <IconCheck className="h-4 w-4 shrink-0 text-[#0F766E]" aria-hidden />
-                        {h}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {proximityPoints.length ? <VenueProximityList points={proximityPoints} /> : null}
-              </div>
-              <div>
-                <h3 className="font-display text-lg font-semibold text-stone-900">Where you&apos;ll celebrate</h3>
-                <div className="mt-4">
-                  <VenueMapEmbed
-                    lat={venue.lat}
-                    lng={venue.lng}
-                    mapQuery={mapQuery}
-                    placeLabel={primaryPlaceLabel || locationLabel}
-                    title={isVenue ? "Venue location" : "Service area"}
-                  />
-                </div>
-                <p className="mt-4 text-sm leading-relaxed text-stone-600">
-                  {primaryPlaceLabel || <span className="text-stone-400">Area not listed</span>}
-                </p>
-              </div>
-            </div>
-          </SectionContainer>
-
-          <SectionContainer
-            id="venue-section-venue-details"
-            title={
-              isVenue ? (
-                <span className="flex items-center gap-2">
-                  <IconLines className="h-6 w-6 shrink-0 text-[#0F766E]" aria-hidden />
-                  Venue Details
-                </span>
-              ) : (
-                "Highlights"
-              )
-            }
-          >
-            {isVenue ? (
-              <VenueDetailsRows venueDetails={venue.venueDetails} />
-            ) : (
-              <AmenityChips items={amenityItems} activeIndex={activeTag} onSelect={setActiveTag} />
-            )}
-          </SectionContainer>
-
-          <SectionContainer
-            id="venue-section-photos"
-            title={
-              <span className="font-display text-2xl font-semibold tracking-tight text-stone-900">Gallery</span>
-            }
-          >
-            <VenueGallery
-              images={images}
-              galleryResponsive={galleryResponsive}
-              onImageClick={(src) => setLightbox(src)}
-            />
-          </SectionContainer>
-
-          <SectionContainer
-            id="venue-section-pricing"
-            title={
-              <span className="font-display text-2xl font-semibold tracking-tight text-stone-900">
-                Packages &amp; rates
-              </span>
-            }
-          >
-            <VenuePricingPremium
-              priceRange={priceDisplay}
-              bullets={pricingBullets}
-              capacity={venue.capacity}
-              facilities={venue.facilities}
-            />
-          </SectionContainer>
-
-          <SectionContainer
-            id="venue-section-reviews"
-            title={
-              <span className="font-display text-2xl font-semibold tracking-tight text-stone-900">Guest stories</span>
-            }
-          >
-            <ReviewList
-              reviews={reviewItems}
-              venueName={venue.businessName}
-              onInquire={inquire}
-              demo={demo}
-            />
-          </SectionContainer>
+          <VenueProfileMainSections
+            isVenue={isVenue}
+            experienceDescription={experienceDescription}
+            highlights={highlights}
+            proximityPoints={proximityPoints}
+            mapQuery={mapQuery}
+            primaryPlaceLabel={primaryPlaceLabel}
+            locationLabel={locationLabel}
+            venue={venue}
+            amenityItems={amenityItems}
+            activeTag={activeTag}
+            setActiveTag={setActiveTag}
+            inquire={inquire}
+            demo={demo}
+            inquireSending={inquireSending}
+            images={images}
+            galleryResponsive={galleryResponsive}
+            setLightbox={setLightbox}
+            priceDisplay={priceDisplay}
+            pricingBullets={pricingBullets}
+            reviewItems={reviewItems}
+          />
         </div>
       </div>
 

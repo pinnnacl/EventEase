@@ -135,6 +135,7 @@ export function useVenueHeroGallery(venueId, heroSrc, heroResponsive) {
  *   swiperEnabled: boolean;
  *   active?: boolean;
  *   imageClassName?: string;
+ *   imageFit?: "cover" | "contain";
  *   onOpenGallery?: () => void;
  * }} props
  */
@@ -143,8 +144,15 @@ export function VenueHeroGallery({
   swiperEnabled,
   active = true,
   imageClassName = "",
+  imageFit = "cover",
   onOpenGallery,
 }) {
+  const isContain = imageFit === "contain";
+  const wrapperClassName = isContain ? "w-full" : "h-full w-full";
+  const buttonClassName = isContain
+    ? "block w-full cursor-pointer border-0 bg-transparent p-0 text-left"
+    : "block h-full w-full cursor-pointer border-0 bg-transparent p-0 text-left";
+
   let inner = null;
 
   if (!slides.length) {
@@ -158,7 +166,7 @@ export function VenueHeroGallery({
       <button
         type="button"
         onClick={() => onOpenGallery?.()}
-        className="block h-full w-full cursor-pointer border-0 bg-transparent p-0 text-left"
+        className={buttonClassName}
         aria-label="View venue photos"
       >
         <ResponsiveVendorImage
@@ -174,11 +182,16 @@ export function VenueHeroGallery({
     );
   } else {
     inner = (
-      <VenueHeroSwiperClient slides={slides} imageClassName={imageClassName} onOpenGallery={onOpenGallery} />
+      <VenueHeroSwiperClient
+        slides={slides}
+        imageClassName={imageClassName}
+        autoHeight={isContain}
+        onOpenGallery={onOpenGallery}
+      />
     );
   }
 
-  return <div className="h-full w-full">{inner}</div>;
+  return <div className={wrapperClassName}>{inner}</div>;
 }
 
 export { useIsLgViewport };
