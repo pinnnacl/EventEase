@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import logoSvg from "../../assets/logo.svg";
 import HeaderHeart from "../HeaderHeart";
 import HomeDesktopCategoryNav from "./HomeDesktopCategoryNav";
+import HomeDesktopFilterModal from "./HomeDesktopFilterModal";
 import HomeDesktopNavbarSearch from "./HomeDesktopNavbarSearch";
 
 const SCROLL_SHRINK_THRESHOLD = 20;
@@ -29,6 +30,8 @@ export default function HomeDesktopHeader({
   handleLogout,
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [appliedGatheringKey, setAppliedGatheringKey] = useState(null);
 
   useEffect(() => {
     const onScroll = () => {
@@ -46,11 +49,12 @@ export default function HomeDesktopHeader({
         isScrolled ? "lg:shadow-md" : "lg:shadow-[0_1px_8px_rgba(0,0,0,0.04)]"
       }`}
     >
-      <div
-        className={`mx-auto grid max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6 px-6 py-4 transition-all duration-300 ease-in-out will-change-[padding] lg:py-5 ${
-          isScrolled ? "lg:py-2.5" : ""
-        }`}
-      >
+      <div className="relative mx-auto max-w-7xl overflow-visible px-6">
+        <div
+          className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6 py-4 transition-all duration-300 ease-in-out will-change-[padding] lg:py-5 ${
+            isScrolled ? "lg:py-2.5" : ""
+          }`}
+        >
         <Link
           href="/"
           className="group flex min-w-0 items-center rounded-lg outline-none transition-all duration-300 ease-in-out hover:opacity-80 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
@@ -62,7 +66,12 @@ export default function HomeDesktopHeader({
           />
         </Link>
 
-        <HomeDesktopNavbarSearch isScrolled={isScrolled} />
+        <HomeDesktopNavbarSearch
+          isScrolled={isScrolled}
+          filterOpen={filterOpen}
+          onFilterOpen={() => setFilterOpen(true)}
+          appliedGatheringKey={appliedGatheringKey}
+        />
 
         <div className="flex shrink-0 items-center gap-2">
           <Link
@@ -226,6 +235,14 @@ export default function HomeDesktopHeader({
             </div>
           </div>
         </div>
+        </div>
+
+        <HomeDesktopFilterModal
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          selectedKey={appliedGatheringKey}
+          onApply={setAppliedGatheringKey}
+        />
       </div>
 
       <HomeDesktopCategoryNav isScrolled={isScrolled} />
