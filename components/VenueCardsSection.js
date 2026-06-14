@@ -20,11 +20,11 @@ export default function VenueCardsSection({ venues = [], loadError = false, load
   return (
     <Section
       id="featured-venues"
-      className={`scroll-mt-24 !py-6 sm:!py-8 lg:!py-[clamp(40px,6vw,120px)] ${className}`.trim()}
+      className={`scroll-mt-24 !py-6 sm:!py-8 lg:!pt-8 lg:!pb-12 ${className}`.trim()}
     >
       <div className="mx-auto w-full max-w-6xl min-w-0">
-        <div className="mb-4 w-full text-left sm:mb-5 lg:mb-10 lg:text-center">
-          <h2 className="text-2xl font-semibold tracking-tight text-wedding-ink sm:text-[1.7rem] lg:text-fluid-section-title lg:font-bold">
+        <div className="mb-4 w-full text-left sm:mb-5 lg:mb-6">
+          <h2 className="text-2xl font-semibold tracking-tight text-wedding-ink sm:text-[1.7rem] lg:text-fluid-section-title">
             Featured Venues
           </h2>
         </div>

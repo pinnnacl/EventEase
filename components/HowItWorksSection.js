@@ -34,7 +34,7 @@ export default function HowItWorksSection() {
     >
       <div className="mx-auto w-full max-w-6xl">
         <div className="mb-10 w-full text-center sm:mb-12">
-          <h2 className="text-fluid-section-title font-bold tracking-tight text-[#0f766e]">
+          <h2 className="text-fluid-section-title font-semibold tracking-tight text-[#0f766e]">
             How it works
           </h2>
         </div>

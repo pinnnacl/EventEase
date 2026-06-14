@@ -7,7 +7,7 @@ import { HOME_DESKTOP_FEATURE_CARDS } from "./homeDesktopFeatureConfig";
 export default function HomeDesktopFeatureGrid() {
   return (
     <section className="hidden w-full bg-white lg:block" aria-label="Trending wedding categories">
-      <div className="mx-auto max-w-7xl px-6 pb-8 pt-5">
+      <div className="mx-auto max-w-7xl px-6 pb-4 pt-5">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
           {HOME_DESKTOP_FEATURE_CARDS.map(({ key, title, subtext, href, Icon }) => (
             <Link

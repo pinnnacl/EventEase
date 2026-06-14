@@ -1,4 +1,4 @@
-import { Camera, Sparkles, TreePine, Video, Waves, Ship } from "lucide-react";
+import { TreePine, Video, Waves, Ship } from "lucide-react";
 
 /** Premium trending wedding categories for desktop home feature grid. */
 export const HOME_DESKTOP_FEATURE_CARDS = [
@@ -29,19 +29,5 @@ export const HOME_DESKTOP_FEATURE_CARDS = [
     subtext: "Top storytellers",
     href: "/photography",
     Icon: Video,
-  },
-  {
-    key: "bridal-glow",
-    title: "The Minimalist Bridal Glow",
-    subtext: "Elite makeup artists",
-    href: "/makeup",
-    Icon: Sparkles,
-  },
-  {
-    key: "pre-wedding",
-    title: "Pre-Wedding Editorial Shoots",
-    subtext: "All-inclusive visual sets",
-    href: "/photography",
-    Icon: Camera,
   },
 ];

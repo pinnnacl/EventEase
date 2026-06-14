@@ -25,16 +25,14 @@ export default function HomeDesktopCategoryNav({ isScrolled = false }) {
             <li key={key} className="shrink-0">
               <Link
                 href={href}
-                className={`group inline-flex items-center gap-2.5 transition-all duration-300 ease-in-out ${
-                  active ? "lg:text-gray-900" : "lg:text-gray-700 lg:hover:text-gray-900"
-                } ${isScrolled ? "lg:gap-2" : "lg:gap-3"}`}
+                className={`group relative inline-flex items-center gap-2 pb-0.5 transition-colors duration-200 ease-in-out ${
+                  active ? "text-neutral-900" : "text-neutral-600 hover:text-neutral-900"
+                }`}
               >
                 {iconSrc ? (
                   <span
                     aria-hidden
-                    className={`relative shrink-0 bg-current transition-all duration-300 ease-in-out size-5 lg:size-6 ${
-                      isScrolled ? "lg:size-5" : ""
-                    }`}
+                    className="relative size-5 shrink-0 bg-current transition-colors duration-200 ease-in-out"
                     style={{
                       WebkitMaskImage: `url(${iconSrc})`,
                       WebkitMaskRepeat: "no-repeat",
@@ -48,20 +46,20 @@ export default function HomeDesktopCategoryNav({ isScrolled = false }) {
                   />
                 ) : Icon ? (
                   <Icon
-                    className={`size-5 shrink-0 transition-all duration-300 ease-in-out lg:size-6 lg:stroke-[1.5] ${
-                      isScrolled ? "lg:size-5" : ""
-                    }`}
+                    className="size-5 shrink-0 transition-colors duration-200 ease-in-out lg:stroke-[1.5]"
                     strokeWidth={1.5}
                     aria-hidden
                   />
                 ) : null}
-                <span
-                  className={`text-sm font-semibold tracking-tight transition-all duration-300 ease-in-out lg:text-sm lg:font-medium lg:text-gray-700 ${
-                    isScrolled ? "lg:text-xs" : ""
-                  }`}
-                >
+                <span className="text-sm font-medium tracking-tight transition-colors duration-200 ease-in-out lg:text-base">
                   {label}
                 </span>
+                <span
+                  className={`pointer-events-none absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 bg-neutral-900 transition-transform duration-200 ease-in-out group-hover:scale-x-100 ${
+                    active ? "scale-x-100" : ""
+                  }`}
+                  aria-hidden
+                />
               </Link>
             </li>
           );
