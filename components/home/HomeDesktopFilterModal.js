@@ -34,6 +34,8 @@ export default function HomeDesktopFilterModal({
 }) {
   const [mounted, setMounted] = useState(false);
   const [draftKey, setDraftKey] = useState(selectedKey);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [draftDestination, setDraftDestination] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -42,6 +44,8 @@ export default function HomeDesktopFilterModal({
   useEffect(() => {
     if (!open) return;
     setDraftKey(selectedKey);
+    setCurrentStep(1);
+    setDraftDestination("");
   }, [open, selectedKey]);
 
   useEffect(() => {
@@ -61,8 +65,18 @@ export default function HomeDesktopFilterModal({
     onClose();
   }
 
-  function toggleOption(key) {
-    setDraftKey((current) => (current === key ? null : key));
+  function selectOption(key) {
+    setDraftKey(key);
+    setCurrentStep(2);
+  }
+
+  function handleBack() {
+    setCurrentStep(1);
+  }
+
+  function handleApply() {
+    onApply(draftKey);
+    onClose();
   }
 
   return (
@@ -81,38 +95,81 @@ export default function HomeDesktopFilterModal({
         <X className="size-5" strokeWidth={1.75} aria-hidden />
       </button>
 
-      <h3
-        id="home-desktop-filter-title"
-        className="mb-6 font-sans text-lg font-bold tracking-tight text-neutral-800 md:mb-8 md:text-left lg:mx-auto lg:max-w-xl"
-      >
-        Let&apos;s match your style. What type of gathering is this?
-      </h3>
-
-      <div className="mb-8 grid grid-cols-1 gap-3 lg:mx-auto lg:mb-8 lg:max-w-xl lg:grid-cols-2">
-        {GATHERING_FILTER_OPTIONS.map(({ key, label }) => {
-          const isSelected = draftKey === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={isSelected}
-              onClick={() => toggleOption(key)}
-              className={`${badgeBaseClass} ${isSelected ? badgeActiveClass : ""}`}
+      <div className="lg:transition-opacity lg:duration-200 lg:ease-in-out">
+        {currentStep === 1 ? (
+          <>
+            <h3
+              id="home-desktop-filter-title"
+              className="mb-6 font-sans text-lg font-bold tracking-tight text-neutral-800 md:mb-8 md:text-left lg:mx-auto lg:max-w-xl"
             >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+              Let&apos;s match your style. What type of gathering is this?
+            </h3>
 
-      <div className="flex justify-end pt-4 lg:flex lg:justify-end lg:pt-4">
-        <button
-          type="button"
-          onClick={handleSkip}
-          className="lg:inline-flex lg:items-center lg:justify-center lg:font-sans lg:font-semibold lg:text-xs lg:tracking-wide lg:px-4 lg:py-2 lg:text-neutral-600 lg:bg-neutral-50 lg:hover:bg-neutral-100 lg:border lg:border-neutral-200/60 lg:rounded-lg lg:shadow-sm lg:transition-all lg:duration-200"
-        >
-          Skip
-        </button>
+            <div className="mb-8 grid grid-cols-1 gap-3 lg:mx-auto lg:mb-8 lg:max-w-xl lg:grid-cols-2">
+              {GATHERING_FILTER_OPTIONS.map(({ key, label }) => {
+                const isSelected = draftKey === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => selectOption(key)}
+                    className={`${badgeBaseClass} ${isSelected ? badgeActiveClass : ""}`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end pt-4 lg:flex lg:justify-end lg:pt-4">
+              <button
+                type="button"
+                onClick={handleSkip}
+                className="lg:inline-flex lg:items-center lg:justify-center lg:font-sans lg:font-semibold lg:text-xs lg:tracking-wide lg:px-4 lg:py-2 lg:text-neutral-600 lg:bg-neutral-50 lg:hover:bg-neutral-100 lg:border lg:border-neutral-200/60 lg:rounded-lg lg:shadow-sm lg:transition-all lg:duration-200"
+              >
+                Skip
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h3
+              id="home-desktop-filter-title"
+              className="mb-6 font-sans text-lg font-bold tracking-tight text-neutral-800 md:mb-6 md:text-left lg:mx-auto lg:max-w-xl"
+            >
+              Where are we heading? Choose your destination
+            </h3>
+
+            <div className="mb-8 lg:mx-auto lg:mb-8 lg:max-w-xl">
+              <input
+                type="text"
+                value={draftDestination}
+                onChange={(e) => setDraftDestination(e.target.value)}
+                placeholder="Search or enter city, region, or venue name..."
+                className="w-full rounded-xl border border-neutral-200 bg-neutral-50/60 px-5 py-4 font-sans text-sm font-medium text-neutral-800 transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:outline-none lg:rounded-xl lg:border lg:border-neutral-200 lg:bg-neutral-50/60 lg:px-5 lg:py-4 lg:font-sans lg:text-sm lg:font-medium lg:text-neutral-800 lg:transition-all lg:placeholder:text-neutral-400 lg:focus:border-neutral-400 lg:focus:bg-white lg:focus:outline-none"
+                aria-label="Destination search"
+              />
+            </div>
+
+            <div className="flex items-center justify-between border-t border-neutral-100 pt-4 lg:flex lg:items-center lg:justify-between lg:border-t lg:border-neutral-100 lg:pt-4">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="font-sans text-xs font-semibold text-neutral-500 transition-colors hover:text-neutral-800 lg:font-sans lg:text-xs lg:font-semibold lg:text-neutral-500 lg:transition-colors lg:hover:text-neutral-800"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleApply}
+                className="rounded-lg bg-[#042f2e] px-5 py-2.5 font-sans text-xs font-semibold tracking-wide text-white shadow-sm transition-all hover:opacity-95 lg:inline-flex lg:items-center lg:justify-center lg:rounded-lg lg:bg-[#042f2e] lg:px-5 lg:py-2.5 lg:font-sans lg:text-xs lg:font-semibold lg:tracking-wide lg:text-white lg:shadow-sm lg:transition-all lg:hover:opacity-95"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
