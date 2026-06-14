@@ -84,7 +84,7 @@ export default function MobileHeaderAiSearch() {
                 void runAiSearch();
               }
             }}
-            placeholder="Search smarter with AI"
+            placeholder="Search smarter"
             className="min-h-[44px] min-w-0 flex-[1_1_0%] border-0 bg-transparent py-2 pl-1 text-[0.8125rem] font-medium text-slate-900 outline-none placeholder:text-slate-500 focus:ring-0"
             aria-label="AI wedding search"
           />

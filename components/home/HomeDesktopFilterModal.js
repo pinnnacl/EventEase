@@ -70,7 +70,7 @@ export default function HomeDesktopFilterModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="home-desktop-filter-title"
-      className="absolute left-0 right-0 top-full z-[60] mx-auto mt-1.5 hidden w-full max-w-4xl rounded-2xl border border-neutral-100 bg-white px-10 py-8 font-sans shadow-xl lg:block lg:pb-10 lg:pt-12"
+      className="absolute left-0 right-0 top-full z-[60] mx-auto mt-1.5 hidden w-full rounded-2xl border border-neutral-100 bg-white px-10 py-8 font-sans shadow-xl lg:block lg:max-w-2xl lg:pb-10 lg:pt-12"
     >
       <button
         type="button"
@@ -83,7 +83,7 @@ export default function HomeDesktopFilterModal({
 
       <h3
         id="home-desktop-filter-title"
-        className="mb-6 text-center font-sans text-lg font-bold tracking-tight text-neutral-800 lg:mb-8"
+        className="mb-6 font-sans text-lg font-bold tracking-tight text-neutral-800 md:mb-8 md:text-left lg:mx-auto lg:max-w-xl"
       >
         Let&apos;s match your style. What type of gathering is this?
       </h3>
@@ -105,7 +105,7 @@ export default function HomeDesktopFilterModal({
         })}
       </div>
 
-      <div className="flex justify-end border-t border-neutral-100 pt-4 lg:flex lg:justify-end lg:border-t lg:border-neutral-100 lg:pt-4">
+      <div className="flex justify-end pt-4 lg:flex lg:justify-end lg:pt-4">
         <button
           type="button"
           onClick={handleSkip}
