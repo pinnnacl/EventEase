@@ -11,9 +11,9 @@ export const GATHERING_FILTER_OPTIONS = [
 ];
 
 const badgeBaseClass =
-  "flex cursor-pointer items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50/80 px-6 py-3 text-center font-sans text-sm font-semibold text-neutral-700 transition-all duration-200 hover:border-neutral-300 hover:bg-neutral-100";
+  "flex cursor-pointer items-center justify-center rounded-lg px-6 py-3 text-center font-sans text-sm font-semibold transition-all duration-300 lg:border lg:border-slate-200/60 lg:bg-[#f8fafc] lg:py-3.5 lg:text-neutral-700 lg:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.55)] lg:hover:border-slate-300/70 lg:hover:bg-[#f1f5f9]";
 const badgeActiveClass =
-  "border-[#0F766E] bg-[#F0FDFA] text-[#115E59] hover:border-[#0F766E] hover:bg-[#F0FDFA]";
+  "lg:border-[#042f2e] lg:bg-[#042f2e] lg:text-white lg:shadow-sm lg:hover:border-[#042f2e] lg:hover:bg-[#053a38] lg:hover:text-white";
 
 /**
  * Desktop-only filter dropdown panel (render inside a `relative` header wrapper).
@@ -90,12 +90,12 @@ export default function HomeDesktopFilterModal({
         type="button"
         onClick={onClose}
         aria-label="Close filters"
-        className="absolute right-5 top-5 inline-flex size-9 items-center justify-center rounded-full font-sans text-neutral-500 transition-colors duration-200 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
+        className="absolute right-5 top-5 inline-flex items-center justify-center font-sans transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 lg:right-10 lg:top-10 lg:size-8 lg:text-slate-400 lg:hover:text-slate-700"
       >
-        <X className="size-5" strokeWidth={1.75} aria-hidden />
+        <X className="size-5 lg:size-4" strokeWidth={1.25} aria-hidden />
       </button>
 
-      <div className="lg:transition-opacity lg:duration-200 lg:ease-in-out">
+      <div className="lg:px-1 lg:pb-0.5 lg:pt-0.5 lg:transition-opacity lg:duration-200 lg:ease-in-out">
         {currentStep === 1 ? (
           <>
             <h3
@@ -105,7 +105,7 @@ export default function HomeDesktopFilterModal({
               Let&apos;s match your style. What type of gathering is this?
             </h3>
 
-            <div className="mb-8 grid grid-cols-1 gap-3 lg:mx-auto lg:mb-8 lg:max-w-xl lg:grid-cols-2">
+            <div className="mb-8 grid grid-cols-1 gap-3 lg:mx-auto lg:mb-9 lg:max-w-xl lg:grid-cols-2 lg:gap-x-5 lg:gap-y-4">
               {GATHERING_FILTER_OPTIONS.map(({ key, label }) => {
                 const isSelected = draftKey === key;
                 return (
@@ -122,11 +122,11 @@ export default function HomeDesktopFilterModal({
               })}
             </div>
 
-            <div className="flex justify-end pt-4 lg:flex lg:justify-end lg:pt-4">
+            <div className="flex justify-end pt-4 lg:flex lg:justify-end lg:pt-5">
               <button
                 type="button"
                 onClick={handleSkip}
-                className="lg:inline-flex lg:items-center lg:justify-center lg:font-sans lg:font-semibold lg:text-xs lg:tracking-wide lg:px-4 lg:py-2 lg:text-neutral-600 lg:bg-neutral-50 lg:hover:bg-neutral-100 lg:border lg:border-neutral-200/60 lg:rounded-lg lg:shadow-sm lg:transition-all lg:duration-200"
+                className="lg:font-sans lg:text-xs lg:font-semibold lg:tracking-wide lg:text-slate-500 lg:transition-colors lg:duration-200 lg:hover:text-slate-800"
               >
                 Skip
               </button>
@@ -147,7 +147,7 @@ export default function HomeDesktopFilterModal({
                 value={draftDestination}
                 onChange={(e) => setDraftDestination(e.target.value)}
                 placeholder="Search or enter city, region, or venue name..."
-                className="w-full rounded-xl border border-neutral-200 bg-neutral-50/60 px-5 py-4 font-sans text-sm font-medium text-neutral-800 transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:outline-none lg:rounded-xl lg:border lg:border-neutral-200 lg:bg-neutral-50/60 lg:px-5 lg:py-4 lg:font-sans lg:text-sm lg:font-medium lg:text-neutral-800 lg:transition-all lg:placeholder:text-neutral-400 lg:focus:border-neutral-400 lg:focus:bg-white lg:focus:outline-none"
+                className="w-full rounded-xl border border-neutral-200 bg-neutral-50/60 px-5 py-4 font-sans text-sm font-medium text-neutral-800 transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:outline-none lg:rounded-xl lg:border-slate-200/60 lg:bg-[#f8fafc] lg:px-5 lg:py-4 lg:font-sans lg:text-sm lg:font-medium lg:text-neutral-800 lg:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.55)] lg:transition-all lg:placeholder:text-neutral-400 lg:focus:border-slate-300/80 lg:focus:bg-white lg:focus:outline-none"
                 aria-label="Destination search"
               />
             </div>
