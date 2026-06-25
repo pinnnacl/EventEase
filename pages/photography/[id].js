@@ -6,10 +6,10 @@ import { getVenueDetailByIdAnyStatus, getPublicVenueById } from "../../lib/vendo
 export default function PhotographerProfilePage({ vendor, showPendingPreviewBanner }) {
   if (!vendor) return null;
 
-  const title = `${vendor.businessName} | Photography | THAALI`;
+  const title = `${vendor.businessName} | Photography | eventizo`;
   const desc =
     vendor.description?.slice(0, 160)?.trim() ||
-    `Book ${vendor.businessName} — portfolio, packages, and inquiries on THAALI.`;
+    `Book ${vendor.businessName} — portfolio, packages, and inquiries on eventizo.`;
 
   return (
     <>

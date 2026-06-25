@@ -95,7 +95,7 @@ export default function VendorOnboardingPage() {
   return (
     <>
       <Head>
-        <title>Vendor Onboarding | THAALI</title>
+        <title>Vendor Onboarding | eventizo</title>
       </Head>
 
       <div className="min-h-screen w-full max-w-none bg-background">

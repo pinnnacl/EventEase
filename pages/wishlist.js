@@ -6,8 +6,8 @@ export default function WishlistRoute() {
   return (
     <>
       <Head>
-        <title>Your wishlist | THAALI</title>
-        <meta name="description" content="Venues, photography, and services you have saved on THAALI." />
+        <title>Your wishlist | eventizo</title>
+        <meta name="description" content="Venues, photography, and services you have saved on eventizo." />
       </Head>
 
       <div className="flex min-h-0 w-full max-w-none flex-1 flex-col">

@@ -1,4 +1,4 @@
--- THAALI — Supabase schema for vendor marketplace
+-- eventizo — Supabase schema for vendor marketplace
 -- Run this in the Supabase SQL Editor (or via migration tooling).
 
 -- Extensions

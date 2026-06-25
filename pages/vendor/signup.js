@@ -46,10 +46,10 @@ export default function VendorSignupPage() {
   return (
     <>
       <Head>
-        <title>Become a Vendor | THAALI</title>
+        <title>Become a Vendor | eventizo</title>
         <meta
           name="description"
-          content="Join THAALI as a vendor and reach couples planning premium weddings."
+          content="Join eventizo as a vendor and reach couples planning premium weddings."
         />
       </Head>
 
@@ -64,7 +64,7 @@ export default function VendorSignupPage() {
                 Create your vendor account
               </h1>
               <p className="mt-2 text-sm leading-relaxed text-stone-600 sm:text-base">
-                Join THAALI and start receiving inquiries from couples planning premium weddings.
+                Join eventizo and start receiving inquiries from couples planning premium weddings.
               </p>
             </div>
 

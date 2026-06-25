@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
   return (
     <>
       <Head>
-        <title>Set new password | THAALI</title>
+        <title>Set new password | eventizo</title>
       </Head>
 
       <div className="min-h-screen w-full max-w-none bg-background">

@@ -28,10 +28,10 @@ export default function PhotographyPage({ vendors = [], loadError = false }) {
   return (
     <>
       <Head>
-        <title>Photography | THAALI</title>
+        <title>Photography | eventizo</title>
         <meta
           name="description"
-          content="Browse approved wedding photographers on THAALI—portfolios, packages, and direct inquiries."
+          content="Browse approved wedding photographers on eventizo—portfolios, packages, and direct inquiries."
         />
       </Head>
 

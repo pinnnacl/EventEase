@@ -5,7 +5,7 @@ export default function TransportPage() {
   return (
     <>
       <Head>
-        <title>Transport | THAALI</title>
+        <title>Transport | eventizo</title>
         <meta name="description" content="Guest shuttles, bridal cars, and logistics for Kerala weddings." />
       </Head>
 

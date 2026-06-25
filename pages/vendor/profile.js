@@ -49,7 +49,7 @@ export default function VendorProfilePage() {
   return (
     <>
       <Head>
-        <title>Edit vendor profile | THAALI</title>
+        <title>Edit vendor profile | eventizo</title>
       </Head>
 
       <div className="min-h-screen w-full max-w-none bg-gradient-to-b from-stone-50/80 to-background">

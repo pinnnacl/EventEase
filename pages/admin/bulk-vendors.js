@@ -169,7 +169,7 @@ export default function AdminBulkVendorsPage() {
   return (
     <>
       <Head>
-        <title>Bulk vendor import | Admin | THAALI</title>
+        <title>Bulk vendor import | Admin | eventizo</title>
       </Head>
       <main className="container-default w-full max-w-none py-10 sm:py-14">
         <div className="mx-auto w-full max-w-4xl rounded-2xl border border-stone-200/70 bg-white p-6 shadow-[0_18px_60px_-34px_rgba(20,43,60,0.35)] sm:p-8">

@@ -66,8 +66,8 @@ export default function VendorLoginPage() {
   return (
     <>
       <Head>
-        <title>Vendor Login | THAALI</title>
-        <meta name="description" content="Vendor login for THAALI." />
+        <title>Vendor Login | eventizo</title>
+        <meta name="description" content="Vendor login for eventizo." />
       </Head>
 
       <div className="min-h-screen w-full max-w-none bg-background">
@@ -161,7 +161,7 @@ export default function VendorLoginPage() {
 
               <div className="mt-6 flex flex-col gap-3 text-center">
                 <p className="text-sm text-stone-600">
-                  New to THAALI?{" "}
+                  New to eventizo?{" "}
                   <Link href="/vendor/signup" className="font-semibold text-brand-700 hover:text-brand-800">
                     Become a Vendor
                   </Link>

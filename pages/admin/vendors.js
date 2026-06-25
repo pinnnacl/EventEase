@@ -405,7 +405,7 @@ export default function AdminVendorsPage() {
 
   return (
     <>
-      <Head><title>Admin Vendors | THAALI</title></Head>
+      <Head><title>Admin Vendors | eventizo</title></Head>
       <main className="container-default w-full max-w-none py-10 sm:py-14">
         <div className="mx-auto w-full max-w-6xl rounded-2xl border border-stone-200/70 bg-white p-6 shadow-[0_18px_60px_-34px_rgba(20,43,60,0.35)] sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">

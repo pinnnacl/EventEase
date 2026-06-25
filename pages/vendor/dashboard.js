@@ -88,7 +88,7 @@ export default function VendorDashboardPage() {
   return (
     <>
       <Head>
-        <title>Vendor Dashboard | THAALI</title>
+        <title>Vendor Dashboard | eventizo</title>
       </Head>
 
       <div className="min-h-screen w-full max-w-none bg-gradient-to-b from-stone-50/80 to-background">
@@ -231,7 +231,7 @@ export default function VendorDashboardPage() {
                           type="button"
                           onClick={async () => {
                             const ok = window.confirm(
-                              "Delete vendor profile?\n\nThis will remove your business profile and booking calendar from THAALI. You can create a new profile later.",
+                              "Delete vendor profile?\n\nThis will remove your business profile and booking calendar from eventizo. You can create a new profile later.",
                             );
                             if (!ok) return;
                             setDeleteError("");

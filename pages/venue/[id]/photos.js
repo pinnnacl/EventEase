@@ -22,7 +22,7 @@ export default function VenuePhotosPage({ venue }) {
     return null;
   }
 
-  const title = `Photos — ${venue.businessName} | THAALI`;
+  const title = `Photos — ${venue.businessName} | eventizo`;
 
   return (
     <>

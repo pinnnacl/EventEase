@@ -77,7 +77,7 @@ export default function AuthOAuthCallbackPage() {
   return (
     <>
       <Head>
-        <title>Signing in… | THAALI</title>
+        <title>Signing in… | eventizo</title>
       </Head>
       <main className="flex min-h-[50vh] flex-col items-center justify-center px-4">
         <p className="text-sm font-medium text-stone-600">{message}</p>

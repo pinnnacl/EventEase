@@ -16,4 +16,4 @@ create index if not exists whatsapp_outbound_logs_created_at_idx
   on public.whatsapp_outbound_logs (created_at desc);
 
 comment on table public.whatsapp_outbound_logs is
-  'Server-side WhatsApp Cloud API template sends from THAALI.';
+  'Server-side WhatsApp Cloud API template sends from eventizo.';

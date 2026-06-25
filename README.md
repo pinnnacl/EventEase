@@ -1,4 +1,4 @@
-# THAALI
+# eventizo
 
 Event planning platform powered by Next.js + Supabase.
 

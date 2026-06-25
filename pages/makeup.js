@@ -28,8 +28,8 @@ export default function MakeupPage({ vendors = [], loadError = false }) {
   return (
     <>
       <Head>
-        <title>Makeup | THAALI</title>
-        <meta name="description" content="Bridal and party makeup artists on THAALI—browse approved vendors." />
+        <title>Makeup | eventizo</title>
+        <meta name="description" content="Bridal and party makeup artists on eventizo—browse approved vendors." />
       </Head>
 
       <div className="min-h-screen w-full max-w-none">

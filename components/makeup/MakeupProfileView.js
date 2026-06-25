@@ -109,7 +109,7 @@ export default function MakeupProfileView({ vendor, demo = false, showPendingPre
       <header className="sticky top-0 z-40 border-b border-velvet-gold/15 bg-velvet-ivory/75 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <Link href="/" className="font-makeup-serif text-lg font-semibold tracking-tight text-velvet-rose sm:text-xl">
-            THAALI
+            eventizo
           </Link>
           <nav className="hidden items-center gap-6 text-sm font-medium text-stone-600 sm:flex">
             <a href="#portfolio" className="transition hover:text-velvet-rose">

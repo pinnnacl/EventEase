@@ -7,7 +7,7 @@ export default function HomePage({ featuredVenues = [], loadError = false }) {
   return (
     <>
       <Head>
-        <title>THAALI | Premium Wedding Planning</title>
+        <title>eventizo | Premium Wedding Planning</title>
         <meta
           name="description"
           content="Plan your dream Kerala wedding effortlessly with curated venues, services, and featured spaces across Kerala."

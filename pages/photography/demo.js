@@ -6,7 +6,7 @@ export default function PhotographerDemoPage() {
   return (
     <>
       <Head>
-        <title>Demo photographer | THAALI</title>
+        <title>Demo photographer | eventizo</title>
         <meta
           name="description"
           content="Preview of the photographer marketing profile — sample content only."

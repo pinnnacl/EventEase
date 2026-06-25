@@ -87,7 +87,7 @@ export default async function handler(req, res) {
         : vendorCategory === "photographer"
           ? "Photography"
           : String(v.category || "Services").trim() || "Services";
-    summary = `THAALI public profile — ${catLabel} listing.`.slice(0, 1024);
+    summary = `eventizo public profile — ${catLabel} listing.`.slice(0, 1024);
     if (userName) {
       summary = `${summary} Customer: ${userName}`.slice(0, 1024);
     }

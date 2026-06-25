@@ -6,10 +6,10 @@ import { getVenueDetailByIdAnyStatus, getPublicVenueById } from "../../lib/vendo
 export default function MakeupProfilePage({ vendor, showPendingPreviewBanner }) {
   if (!vendor) return null;
 
-  const title = `${vendor.businessName} | Makeup | THAALI`;
+  const title = `${vendor.businessName} | Makeup | eventizo`;
   const desc =
     vendor.description?.slice(0, 160)?.trim() ||
-    `Book ${vendor.businessName} — bridal makeup and trials on THAALI.`;
+    `Book ${vendor.businessName} — bridal makeup and trials on eventizo.`;
 
   return (
     <>

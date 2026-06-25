@@ -154,7 +154,7 @@ export default async function handler(req, res) {
     }
     vendorRows = rows;
     const v = rows[0];
-    summaryBase = `THAALI scheduled callback — ${String(v.category || "Vendor").trim()}`.slice(0, 1024);
+    summaryBase = `eventizo scheduled callback — ${String(v.category || "Vendor").trim()}`.slice(0, 1024);
   } else {
     const wishlist = body.wishlist && typeof body.wishlist === "object" ? body.wishlist : {};
     const venueIds = Array.isArray(wishlist.venues) ? wishlist.venues.filter((x) => typeof x === "string") : [];

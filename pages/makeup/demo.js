@@ -6,7 +6,7 @@ function MakeupDemoPage() {
   return (
     <>
       <Head>
-        <title>Makeup artist profile demo | THAALI</title>
+        <title>Makeup artist profile demo | eventizo</title>
         <meta
           name="description"
           content="Velvet & Gilded — premium bridal makeup artist profile demo. Sample content only."

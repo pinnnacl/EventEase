@@ -292,8 +292,8 @@ export default function VenueDetailView({
     () =>
       venue.description?.trim() ||
       (isVenue
-        ? "This venue is listed on THAALI. Contact the host for full details, packages, and availability."
-        : "This vendor is listed on THAALI. Review pricing and portfolio details below."),
+        ? "This venue is listed on eventizo. Contact the host for full details, packages, and availability."
+        : "This vendor is listed on eventizo. Review pricing and portfolio details below."),
     [venue.description, isVenue],
   );
 
@@ -552,7 +552,7 @@ export default function VenueDetailView({
                   <div className="pointer-events-auto absolute right-5 top-5 z-10">
                     <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-md ring-1 ring-white/40">
                       <IconStar className="h-3.5 w-3.5 text-amber-500" aria-hidden />
-                      THAALI
+                      eventizo
                     </span>
                   </div>
                   {images.length > 0 ? (

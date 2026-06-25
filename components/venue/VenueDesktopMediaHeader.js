@@ -56,7 +56,7 @@ export default function VenueDesktopMediaHeader({
           <div className="pointer-events-none absolute right-4 top-4 z-10">
             <span className="inline-flex items-center gap-1 rounded-full border border-zinc-100/80 bg-white/95 px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm">
               <IconStar className="h-3.5 w-3.5 text-amber-500" aria-hidden />
-              THAALI
+              eventizo
             </span>
           </div>
           {images.length > 0 ? (

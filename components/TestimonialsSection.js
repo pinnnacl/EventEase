@@ -6,7 +6,7 @@ const testimonials = [
   {
     name: "Aparna & Nithin",
     quote:
-      "THAALI made vendor selection incredibly simple. Every recommendation matched our style perfectly.",
+      "eventizo made vendor selection incredibly simple. Every recommendation matched our style perfectly.",
     image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=300&q=80",
   },
   {

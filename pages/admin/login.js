@@ -72,7 +72,7 @@ export default function AdminLoginPage() {
   return (
     <>
       <Head>
-        <title>Admin Login | THAALI</title>
+        <title>Admin Login | eventizo</title>
       </Head>
       <main className="container-default flex w-full max-w-none justify-center py-12 sm:py-16">
         <div className="w-full max-w-md rounded-2xl border border-stone-200/70 bg-white p-6 shadow-[0_18px_60px_-34px_rgba(20,43,60,0.35)] sm:p-8">

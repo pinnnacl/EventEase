@@ -40,7 +40,7 @@ export default function VendorPendingPage() {
 
   return (
     <>
-      <Head><title>Vendor Review Status | THAALI</title></Head>
+      <Head><title>Vendor Review Status | eventizo</title></Head>
       <main className="container-default w-full max-w-none py-12 sm:py-16">
         <div className="mx-auto w-full max-w-2xl rounded-2xl border border-stone-200/70 bg-white p-6 shadow-[0_18px_60px_-34px_rgba(20,43,60,0.35)] sm:p-8">
           {loading ? (

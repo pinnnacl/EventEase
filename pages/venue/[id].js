@@ -17,13 +17,13 @@ export default function VenueDetailPage({ venue, similar, availability, showPend
     return null;
   }
 
-  const title = `${venue.businessName} | THAALI`;
+  const title = `${venue.businessName} | eventizo`;
   const isVenue = venue.category === "Venue";
   const desc =
     venue.description?.slice(0, 160)?.trim() ||
     (isVenue
-      ? `View ${venue.businessName} in ${venue.city || venue.location}. Book premium wedding venues on THAALI.`
-      : `View ${venue.businessName} (${venue.category}) on THAALI — packages, portfolio, and inquiries.`);
+      ? `View ${venue.businessName} in ${venue.city || venue.location}. Book premium wedding venues on eventizo.`
+      : `View ${venue.businessName} (${venue.category}) on eventizo — packages, portfolio, and inquiries.`);
 
   return (
     <>

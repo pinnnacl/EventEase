@@ -6,7 +6,7 @@ export default function VenueDemoPage() {
   return (
     <>
       <Head>
-        <title>Demo venue | THAALI</title>
+        <title>Demo venue | eventizo</title>
         <meta
           name="description"
           content="Preview of the venue detail layout — sample content only."

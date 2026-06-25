@@ -39,7 +39,7 @@ export default function VenuesPage({ vendors = [], loadError = false }) {
   return (
     <>
       <Head>
-        <title>Wedding Venues in Kerala | THAALI</title>
+        <title>Wedding Venues in Kerala | eventizo</title>
         <meta
           name="description"
           content="Browse curated wedding venues across Kerala—capacities, packages, and amenities in one place."
