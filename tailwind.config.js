@@ -22,6 +22,10 @@ module.exports = {
         /** Single app canvas — white; use bg-background / bg-canvas sitewide */
         background: "#ffffff",
         canvas: "#ffffff",
+        surface: {
+          DEFAULT: "var(--ee-surface)",
+          muted: "#FDFDFF",
+        },
         brand: {
           50: "#ecfdf5",
           100: "#d1fae5",
@@ -30,6 +34,10 @@ module.exports = {
           700: "#134e4a",
           800: "#115e59",
           900: "#042f2e",
+        },
+        primary: {
+          DEFAULT: "#FFDD00",
+          foreground: "#000000",
         },
         wedding: {
           cream: "#ffffff",
@@ -56,6 +64,7 @@ module.exports = {
       boxShadow: {
         premium: "0 12px 36px -16px rgba(20, 43, 60, 0.28)",
         card: "0 8px 24px -14px rgba(31, 41, 55, 0.22)",
+        "hero-glass": "0 24px 48px -12px rgba(15, 23, 42, 0.12)",
       },
       backgroundImage: {
         "wedding-gradient": "linear-gradient(135deg, #ffffff 0%, #ffffff 100%)",
@@ -74,11 +83,37 @@ module.exports = {
           "0%": { opacity: "0", transform: "scale(0.94) translateY(10px)" },
           "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
         },
+        "float-slow": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-15px)" },
+        },
+        "float-medium": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(10px)" },
+        },
+        "float-fast": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-12px)" },
+        },
+        "neural-drift-a": {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "33%": { transform: "translate(3%, -2%) scale(1.05)" },
+          "66%": { transform: "translate(-2%, 2%) scale(0.98)" },
+        },
+        "neural-drift-b": {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "50%": { transform: "translate(-4%, 3%) scale(1.08)" },
+        },
       },
       animation: {
         "ee-dropdown-in": "ee-dropdown-in 0.2s ease-out forwards",
         "ee-reel-modal-backdrop": "ee-reel-modal-backdrop 0.28s ease-out forwards",
         "ee-reel-modal-panel": "ee-reel-modal-panel 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        "float-slow": "float-slow 6s ease-in-out infinite",
+        "float-medium": "float-medium 7s ease-in-out 1s infinite",
+        "float-fast": "float-fast 5s ease-in-out 0.5s infinite",
+        "neural-drift-a": "neural-drift-a 18s ease-in-out infinite",
+        "neural-drift-b": "neural-drift-b 22s ease-in-out infinite",
       },
     },
   },

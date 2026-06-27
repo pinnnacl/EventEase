@@ -7,6 +7,7 @@
   /* Single source of horizontal inset sitewide (no max-width column) */
   --ee-container-px: clamp(16px, 5vw, 120px);
   --ee-canvas: #ffffff;
+  --ee-surface: #F9F9FF;
   --ee-brand: #0f766e;
   --ee-brand-strong: #115e59;
   --ee-text-heading: #0f172a;

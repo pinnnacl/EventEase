@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { Menu, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import logoSvg from "../../assets/logo.svg";
 import HeaderHeart from "../HeaderHeart";
 import HomeDesktopCategoryNav from "./HomeDesktopCategoryNav";
-import HomeDesktopFilterModal from "./HomeDesktopFilterModal";
+import HomeDesktopLocationModal from "./HomeDesktopLocationModal";
 import HomeDesktopNavbarSearch from "./HomeDesktopNavbarSearch";
+import { readStoredLocationLabel, writeStoredLocationLabel } from "../../lib/siteSearchStorage";
 
 const SCROLL_SHRINK_THRESHOLD = 20;
+
+const signInBtnClass =
+  "inline-flex h-[35px] items-center justify-center rounded-[22px] bg-[#F4C430] px-3 py-2.5 text-sm font-semibold text-black transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2";
 
 const utilityPillBtn =
   "inline-flex h-10 items-center justify-center border-0 bg-transparent px-3 text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2";
@@ -30,8 +34,13 @@ export default function HomeDesktopHeader({
   handleLogout,
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [appliedGatheringKey, setAppliedGatheringKey] = useState(null);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [locationLabel, setLocationLabel] = useState("Kochi, Kerala");
+  const searchAnchorRef = useRef(null);
+
+  useEffect(() => {
+    setLocationLabel(readStoredLocationLabel());
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -43,37 +52,69 @@ export default function HomeDesktopHeader({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const vendorMenu = checked ? (
+    <div ref={vendorMenuRef} className="relative">
+      <button
+        type="button"
+        aria-label={vendorMenuOpen ? "Close menu" : "Open menu"}
+        aria-haspopup="menu"
+        aria-expanded={vendorMenuOpen}
+        onClick={() => {
+          setVendorMenuOpen((v) => !v);
+          setAccountMenuOpen(false);
+        }}
+        className={`${utilityPillBtn} ${customer || legacyLogin ? "rounded-r-full" : "rounded-full"}`}
+      >
+        <Menu className="size-5 lg:stroke-[1.5]" strokeWidth={1.5} aria-hidden />
+      </button>
+      <div
+        role="menu"
+        aria-label="Menu"
+        className={`absolute right-0 z-[70] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lg transition duration-200 ${
+          vendorMenuOpen
+            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+            : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
+        }`}
+      >
+        <Link
+          href="/vendor/login"
+          role="menuitem"
+          onClick={() => setVendorMenuOpen(false)}
+          className="block w-full rounded-lg px-3 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100"
+        >
+          Vendor Login
+        </Link>
+        <Link
+          href="/vendor/signup"
+          role="menuitem"
+          onClick={() => setVendorMenuOpen(false)}
+          className="block w-full rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100"
+        >
+          Help / Learn more
+        </Link>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div
       className={`bg-white transition-all duration-300 ease-in-out will-change-[box-shadow] lg:border-b lg:border-gray-100 ${
         isScrolled ? "lg:shadow-md" : "lg:shadow-[0_1px_8px_rgba(0,0,0,0.04)]"
       }`}
     >
-      <div className="relative mx-auto max-w-7xl overflow-visible px-6">
-        <div
-          className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6 py-4 transition-all duration-300 ease-in-out will-change-[padding] lg:py-5 ${
-            isScrolled ? "lg:py-2.5" : ""
-          }`}
-        >
+      <div className="relative w-full">
         <Link
           href="/"
-          className="group flex min-w-0 items-center rounded-lg outline-none transition-all duration-300 ease-in-out hover:opacity-80 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
+          className="group absolute left-[max(1rem,calc(var(--ee-container-px)-1.5rem))] top-1/2 z-10 flex -translate-y-1/2 items-center rounded-lg outline-none transition-opacity duration-300 ease-in-out hover:opacity-80 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
         >
           <img
             src={logoSvg.src}
             alt="EVENTiZO"
-            className={`h-7 w-auto shrink-0 transition-all duration-300 ease-in-out lg:h-8 ${isScrolled ? "lg:h-6" : ""}`}
+            className="h-6 w-auto shrink-0"
           />
         </Link>
 
-        <HomeDesktopNavbarSearch
-          isScrolled={isScrolled}
-          filterOpen={filterOpen}
-          onFilterOpen={() => setFilterOpen(true)}
-          appliedGatheringKey={appliedGatheringKey}
-        />
-
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="absolute right-[max(1rem,calc(var(--ee-container-px)-1.5rem))] top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
           <Link
             href="/wishlist"
             aria-label={wishlistCount > 0 ? `Wishlist, ${wishlistCount} saved items` : "Wishlist"}
@@ -87,8 +128,8 @@ export default function HomeDesktopHeader({
             ) : null}
           </Link>
 
-          <div className="inline-flex items-center rounded-full border border-zinc-900/90 bg-white transition-all duration-300 ease-in-out hover:bg-zinc-50 lg:border-gray-200 lg:shadow-[0_2px_12px_rgba(0,0,0,0.08)] lg:hover:shadow-md">
-            {checked && customer ? (
+          {checked && customer ? (
+            <div className="inline-flex items-center rounded-full border border-zinc-900/90 bg-white transition-all duration-300 ease-in-out hover:bg-zinc-50 lg:border-gray-200 lg:shadow-[0_2px_12px_rgba(0,0,0,0.08)] lg:hover:shadow-md">
               <div ref={accountMenuRef} className="relative">
                 <button
                   type="button"
@@ -139,7 +180,11 @@ export default function HomeDesktopHeader({
                   </button>
                 </div>
               </div>
-            ) : checked && legacyLogin ? (
+              <span className="h-6 w-px shrink-0 bg-zinc-300 lg:bg-gray-200" aria-hidden />
+              {vendorMenu}
+            </div>
+          ) : checked && legacyLogin ? (
+            <div className="inline-flex items-center rounded-full border border-zinc-900/90 bg-white transition-all duration-300 ease-in-out hover:bg-zinc-50 lg:border-gray-200 lg:shadow-[0_2px_12px_rgba(0,0,0,0.08)] lg:hover:shadow-md">
               <div ref={accountMenuRef} className="relative">
                 <button
                   type="button"
@@ -176,72 +221,51 @@ export default function HomeDesktopHeader({
                   </button>
                 </div>
               </div>
-            ) : checked ? (
-              <button
-                type="button"
-                aria-label="Login"
-                onClick={() => {
-                  setVendorMenuOpen(false);
-                  openLoginModal();
-                }}
-                className={`${utilityPillBtn} rounded-l-full`}
-              >
-                <User className="size-5 lg:stroke-[1.5]" strokeWidth={1.5} aria-hidden />
-              </button>
-            ) : null}
+              <span className="h-6 w-px shrink-0 bg-zinc-300 lg:bg-gray-200" aria-hidden />
+              {vendorMenu}
+            </div>
+          ) : checked ? (
+            <button type="button" onClick={() => openLoginModal()} className={signInBtnClass}>
+              Sign In
+            </button>
+          ) : null}
+        </div>
 
-            {checked ? <span className="h-6 w-px shrink-0 bg-zinc-300 lg:bg-gray-200" aria-hidden /> : null}
+        <div
+          ref={searchAnchorRef}
+          data-home-desktop-search-anchor
+          className="absolute left-1/2 top-1/2 z-[5] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 px-6"
+        >
+          <HomeDesktopNavbarSearch
+            isScrolled={isScrolled}
+            locationLabel={locationLabel}
+            locationOpen={locationOpen}
+            onLocationOpen={() => setLocationOpen((open) => !open)}
+          />
+        </div>
 
-            <div ref={vendorMenuRef} className="relative">
-              <button
-                type="button"
-                aria-label={vendorMenuOpen ? "Close menu" : "Open menu"}
-                aria-haspopup="menu"
-                aria-expanded={vendorMenuOpen}
-                onClick={() => {
-                  setVendorMenuOpen((v) => !v);
-                  setAccountMenuOpen(false);
-                }}
-                className={`${utilityPillBtn} ${checked ? "rounded-r-full" : "rounded-full"}`}
-              >
-                <Menu className="size-5 lg:stroke-[1.5]" strokeWidth={1.5} aria-hidden />
-              </button>
-              <div
-                role="menu"
-                aria-label="Menu"
-                className={`absolute right-0 z-[70] mt-2 w-[min(14rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lg transition duration-200 ${
-                  vendorMenuOpen
-                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                    : "pointer-events-none -translate-y-1 scale-[0.98] opacity-0"
-                }`}
-              >
-                <Link
-                  href="/vendor/login"
-                  role="menuitem"
-                  onClick={() => setVendorMenuOpen(false)}
-                  className="block w-full rounded-lg px-3 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100"
-                >
-                  Vendor Login
-                </Link>
-                <Link
-                  href="/vendor/signup"
-                  role="menuitem"
-                  onClick={() => setVendorMenuOpen(false)}
-                  className="block w-full rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100"
-                >
-                  Help / Learn more
-                </Link>
-              </div>
+        <div className="relative mx-auto max-w-7xl overflow-visible px-6">
+          <div
+            className={`py-4 transition-all duration-300 ease-in-out will-change-[padding] lg:py-5 ${
+              isScrolled ? "lg:py-2.5" : ""
+            }`}
+          >
+            <div aria-hidden className="pointer-events-none invisible mx-auto flex w-full max-w-2xl items-center gap-3">
+              <div className={`min-h-[44px] flex-1 lg:min-h-[48px] ${isScrolled ? "lg:min-h-[40px]" : ""}`} />
+              <div className={`min-h-[44px] w-[8.5rem] shrink-0 lg:min-h-[48px] ${isScrolled ? "lg:min-h-[40px]" : ""}`} />
             </div>
           </div>
         </div>
-        </div>
 
-        <HomeDesktopFilterModal
-          open={filterOpen}
-          onClose={() => setFilterOpen(false)}
-          selectedKey={appliedGatheringKey}
-          onApply={setAppliedGatheringKey}
+        <HomeDesktopLocationModal
+          open={locationOpen}
+          onClose={() => setLocationOpen(false)}
+          selectedLabel={locationLabel}
+          anchorRef={searchAnchorRef}
+          onSelect={(label) => {
+            setLocationLabel(label);
+            writeStoredLocationLabel(label);
+          }}
         />
       </div>
 
