@@ -70,7 +70,7 @@ export default function HomeDesktopHero() {
             <div className="relative min-w-0 flex-1">
               {/* Card A — Exclusive Offers (top-right) */}
               <div
-                className={`absolute right-6 top-10 w-[15.75rem] animate-float-slow ${glassCard} px-5 py-4 xl:right-10`}
+                className={`absolute right-14 top-10 w-[15.75rem] animate-float-slow ${glassCard} px-5 py-4 xl:right-20`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-[0.8125rem] font-medium text-neutral-500">Exclusive Offers</p>
@@ -121,7 +121,7 @@ export default function HomeDesktopHero() {
 
               {/* Card C — Timeline (bottom-right) */}
               <div
-                className={`absolute bottom-10 right-16 w-[13.5rem] animate-float-fast ${glassCard} px-5 py-4 xl:right-24`}
+                className={`absolute bottom-10 right-24 w-[13.5rem] animate-float-fast ${glassCard} px-5 py-4 xl:right-32`}
               >
                 <div className="flex items-center gap-2">
                   <Calendar className="size-[1.125rem] text-[#C9A227]" strokeWidth={2} aria-hidden />
